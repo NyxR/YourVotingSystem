@@ -44,3 +44,9 @@
 
 - Can view assigned voting sessions
 - Can entered in assigned voting session and input result for each voting items
+
+## Models
+
+- User
+- VotingSession
+- VotingItem
