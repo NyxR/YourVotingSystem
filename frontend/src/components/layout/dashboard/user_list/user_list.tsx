@@ -61,10 +61,9 @@ const columns = [
     },
     cell: ({ row }) => {
       const role: string = row.getValue('role');
-      console.log(role);
       return (
         <Badge
-          className='w-full flex items-center justify-center'
+          className='max-w-20 flex items-center justify-center'
           variant={role === 'Admin' ? 'default' : 'destructive'}
         >
           {role}

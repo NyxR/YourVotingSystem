@@ -5,6 +5,7 @@ import {
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
+  getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
@@ -17,6 +18,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+
+import PaginationTable from '@/components/utilities/pagination-table';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -33,6 +36,12 @@ export function DataTable<TData, TValue>({
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: {
+      pagination: {
+        pageSize: 10,
+      },
+    },
   });
 
   return (
@@ -87,9 +96,14 @@ export function DataTable<TData, TValue>({
           </TableBody>
         </Table>
       </div>
-      <div className='flex-1 text-sm text-secondary'>
-        {table.getSelectedRowModel().rows.length} of{' '}
-        {table.getFilteredRowModel().rows.length} rows selected
+      <div className='flex justify-between'>
+        <div className='flex items-center justify-center text-sm text-secondary'>
+          {table.getSelectedRowModel().rows.length} of{' '}
+          {table.getFilteredRowModel().rows.length} rows selected
+        </div>
+        <div className='flex'>
+          <PaginationTable table={table} />
+        </div>
       </div>
     </div>
   );

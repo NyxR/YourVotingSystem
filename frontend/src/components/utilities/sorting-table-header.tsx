@@ -23,11 +23,9 @@ const SortingTableHeader = <T,>({
   const column = info.column;
   const selected = (column.getFilterValue() as T[]) ?? [];
   const toggleSelected = (select: T) => {
-    console.log('selected', selected);
     const update = selected.includes(select)
       ? selected.filter((s) => s !== select)
       : [...selected, select];
-    console.log('updated', update);
     column.setFilterValue(update.length ? update : undefined);
   };
   return (
