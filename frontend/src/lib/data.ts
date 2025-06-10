@@ -1,6 +1,6 @@
 import { faker } from '@faker-js/faker';
 
-type Role = 'Admin' | 'Agent';
+export type Role = 'Admin' | 'Agent';
 
 export type User = {
   id: string;

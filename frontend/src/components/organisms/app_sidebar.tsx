@@ -1,0 +1,94 @@
+import React from 'react';
+import {
+  Sidebar,
+  SidebarHeader,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarGroupContent,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+} from '@/components/ui/sidebar';
+import {
+  Card,
+  CardTitle,
+  CardContent,
+  CardHeader,
+} from '@/components/ui/card';
+import Link from 'next/link';
+import { cn } from '@/lib/utils';
+
+const items = [
+  {
+    title: 'Home',
+    url: '/dashboard',
+  },
+  {
+    title: 'Users',
+    url: '/dashboard/users',
+  },
+  {
+    title: 'Voting Session',
+    url: 'dashboard',
+  },
+  {
+    title: 'Voting Item',
+    url: 'dashboard',
+  },
+];
+
+const AppSidebar = () => {
+  return (
+    // <div className='container h-dvh border-r-2'>
+    //   <div className='flex flex-col'>
+    //     <div className=''>
+    //       <h1 className='text-2xl px-10 py-6'>Voting System</h1>
+    //     </div>
+    //     {items.map((item) => (
+    //       <MenuItem
+    //         key={item.title}
+    //         title={item.title}
+    //         link={item.url}
+    //       />
+    //     ))}
+    //   </div>
+    // </div>
+    <Card className={cn('h-full bg-background')}>
+      <CardHeader>
+        <CardTitle className='text-2xl'>Voting System</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className='flex flex-col'>
+          {items.map((item) => (
+            <MenuItem
+              key={item.title}
+              title={item.title}
+              link={item.url}
+            />
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+type MenuItemProps = {
+  title: string;
+  link: string;
+};
+
+const MenuItem = ({ title, link }: MenuItemProps) => {
+  return (
+    <Link
+      className={cn(
+        'py-4 px-10 cursor-pointer rounded-md no-underline hover:bg-accent hover:text-accent-foreground'
+      )}
+      href={link}
+    >
+      {title}
+    </Link>
+  );
+};
+
+export default AppSidebar;

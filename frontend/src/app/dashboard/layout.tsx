@@ -1,7 +1,7 @@
 import React from 'react';
-import { SidebarProvider } from '@/components/ui/sidebar';
-import Navbar from '@/components/layout/navbar/navbar';
-import AppSidebar from '@/components/layout/app_sidebar/app_sidebar';
+import Navbar from '@/components/molecules/navbar/navbar';
+import AppSidebar from '@/components/organisms/app_sidebar';
+import { Card } from '@/components/ui/card';
 
 type DashboardLayoutProps = {
   children: React.ReactNode;
@@ -9,13 +9,13 @@ type DashboardLayoutProps = {
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   return (
-    <SidebarProvider>
-      <section className='w-screen h-screen'>
-        <div className='grid grid-flow-col grid-rows-10'>
-          <div className='row-span-10 col-span-1'>
-            <AppSidebar />
-          </div>
-          <div className='col-span-10'>
+    <section className='w-full h-full'>
+      <div className='flex h-full'>
+        <div className='mx-2 my-2 grow-[1]'>
+          <AppSidebar />
+        </div>
+        <div className='mr-2 my-2 grow-[8]'>
+          <div className='flex flex-col h-full gap-2'>
             <Navbar
               left={
                 <h1 className='text-2xl cursor-pointer'>
@@ -23,11 +23,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 </h1>
               }
             />
+            <Card className='flex-1 bg-background'>{children}</Card>
           </div>
-          <div className='col-span-10 row-span-9'>{children}</div>
         </div>
-      </section>
-    </SidebarProvider>
+      </div>
+    </section>
   );
 };
 

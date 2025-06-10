@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import { DataTable } from '@/components/utilities/data-table';
-import { data, User } from '@/lib/data';
+import { data, User, Role } from '@/lib/data';
 import { Separator } from '@/components/ui/separator';
 import { createColumnHelper } from '@tanstack/react-table';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -77,17 +77,7 @@ const columns = [
 ];
 
 const UserList = () => {
-  return (
-    <div className='flex flex-col gap-3'>
-      <div>
-        <h1 className='text-xl'>List of Users</h1>
-        <Separator />
-      </div>
-      <div className=''>
-        <DataTable<User, any> columns={columns} data={data} />
-      </div>
-    </div>
-  );
+  return <DataTable<User, any> columns={columns} data={data} />;
 };
 
 export default UserList;

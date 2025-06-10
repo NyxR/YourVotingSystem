@@ -1,6 +1,6 @@
 import React from 'react';
-import MetricCard from '../metrics_card/metrics_card';
-import UserList from '../user_list/user_list';
+import MetricCard from '../../molecules/metrics_card/metrics_card';
+import UserList from '../../organisms/users/user_list';
 
 const items = [
   {

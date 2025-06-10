@@ -1,17 +1,16 @@
 import React from 'react';
-import { User } from '@/lib/data';
 import { HeaderContext } from '@tanstack/react-table';
 import { ArrowUpDown } from 'lucide-react';
 
-type DefaultTableHeaderProps<T> = {
-  info: HeaderContext<User, T>;
+type DefaultTableHeaderProps<M, T> = {
+  info: HeaderContext<M, T>;
   name: string;
 };
 
-const DefaultTableHeader = <T,>({
+const DefaultTableHeader = <M, T>({
   info,
   name,
-}: DefaultTableHeaderProps<T>) => {
+}: DefaultTableHeaderProps<M, T>) => {
   return (
     <div
       className='flex w-full h-full items-center justify-start gap-1'

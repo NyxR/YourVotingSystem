@@ -1,6 +1,5 @@
 import React from 'react';
 import { HeaderContext } from '@tanstack/react-table';
-import { User } from '@/lib/data';
 import { Funnel } from 'lucide-react';
 import {
   Popover,
@@ -9,17 +8,17 @@ import {
 } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
 
-type SortingTableHeaderProps<T> = {
-  info: HeaderContext<User, T>;
+type SortingTableHeaderProps<M, T> = {
+  info: HeaderContext<M, T>;
   name: string;
   options: T[];
 };
 
-const SortingTableHeader = <T,>({
+const SortingTableHeader = <M, T>({
   info,
   name,
   options,
-}: SortingTableHeaderProps<T>) => {
+}: SortingTableHeaderProps<M, T>) => {
   const column = info.column;
   const selected = (column.getFilterValue() as T[]) ?? [];
   const toggleSelected = (select: T) => {
@@ -47,7 +46,7 @@ const SortingTableHeader = <T,>({
                   checked={selected.includes(option)}
                   onCheckedChange={() => toggleSelected(option)}
                 />
-                <label htmlFor={`${option}`} className='text-sm'>
+                <label htmlFor={`${option}`} className='text-base'>
                   {`${option}`}
                 </label>
               </div>
