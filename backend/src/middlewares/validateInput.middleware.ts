@@ -10,7 +10,7 @@ export const validateBodyInput =
     } catch (error) {
       if (error instanceof ZodError) {
         const errorMessages = error.errors.map((issue) => ({
-          name: issue.path,
+          name: issue.path[0],
           message: issue.message,
         }));
         res.status(400).send({

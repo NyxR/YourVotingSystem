@@ -8,3 +8,5 @@ export const createUserFormSchema = z.object({
     .email('Invalid email address'),
   role: z.string().min(1, 'Role is required'),
 });
+
+export type TUserFormData = z.infer<typeof createUserFormSchema>;

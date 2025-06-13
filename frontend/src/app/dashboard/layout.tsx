@@ -2,6 +2,7 @@ import React from 'react';
 import Navbar from '@/components/molecules/navbar/navbar';
 import AppSidebar from '@/components/organisms/app_sidebar';
 import { Card } from '@/components/ui/card';
+import { Toaster } from '@/components/ui/toaster';
 
 type DashboardLayoutProps = {
   children: React.ReactNode;
@@ -27,6 +28,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </div>
         </div>
       </div>
+      <Toaster />
     </section>
   );
 };

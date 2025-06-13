@@ -1,5 +1,6 @@
 'use client';
 import { Button } from '@/components/ui/button';
+import { Loader2Icon } from 'lucide-react';
 import {
   Dialog,
   DialogClose,
@@ -28,22 +29,19 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { submitUserForm } from '@/lib/userform.action';
 import { cn } from '@/lib/utils';
-import React, { useActionState, useRef, useState } from 'react';
+import React, {
+  useActionState,
+  useRef,
+  useState,
+  useTransition,
+} from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
-import { createUserFormSchema } from '@/lib/userform.schema';
-
-// const createUserFormSchema = z.object({
-//   name: z.string().min(1, 'name is required'),
-//   email: z
-//     .string()
-//     .min(1, 'email is required')
-//     .email('Invalid email address'),
-//   role: z.string().min(1, 'Role is required'),
-// });
+import { createUserFormSchema } from '@/lib/validations/userform.schema';
+import { addUserSafeAction } from '@/actions/users.actions';
+import { useToast } from '@/hooks/use-toast';
 
 type UserFormProps = {
   btn_title: string;
@@ -51,22 +49,11 @@ type UserFormProps = {
   roles: string[];
 };
 
-const initialState = {
-  success: false,
-  errors: {} as Record<string, string[]>,
-  values: { name: '', email: '', role: '' },
-};
-
 const UserForm = ({
   btn_title,
   form_title,
   roles,
 }: UserFormProps) => {
-  const [state, formAction] = useActionState(
-    submitUserForm,
-    initialState
-  );
-
   const form = useForm<z.infer<typeof createUserFormSchema>>({
     resolver: zodResolver(createUserFormSchema),
     defaultValues: {
@@ -76,14 +63,48 @@ const UserForm = ({
     },
   });
 
-  const onSubmit = (values: z.infer<typeof createUserFormSchema>) => {
-    console.log(values);
-    form.reset();
+  const [open, setOpen] = useState(false);
+  const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
+
+  // const { executeAsync, result } = useAction(addUserSafeAction, {
+  //   onSuccess: async () => {},
+  // });
+
+  const onSubmit = async (
+    values: z.infer<typeof createUserFormSchema>
+  ) => {
+    startTransition(async () => {
+      const result = await addUserSafeAction(values);
+      console.log('result', result);
+      const result_data = result?.data;
+      if (result_data?.error) {
+        const data = result_data?.data;
+        if (Array.isArray(data)) {
+          data.map((err) =>
+            form.setError(err?.name, {
+              type: 'server',
+              message: err?.message,
+            })
+          );
+        }
+        toast({
+          description: result_data?.message,
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          description: result_data?.message,
+          variant: 'success',
+        });
+        form.reset();
+        setOpen(false);
+      }
+    });
   };
 
-  console.log('formstate', state);
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button>{btn_title}</Button>
       </DialogTrigger>
@@ -133,17 +154,13 @@ const UserForm = ({
                 name='role'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email Address</FormLabel>
+                    <FormLabel>Role</FormLabel>
                     <FormControl>
                       <Select
                         onValueChange={field.onChange}
                         defaultValue={field.value}
                       >
-                        <SelectTrigger
-                          className={cn(
-                            state.errors.role && 'border-destructive'
-                          )}
-                        >
+                        <SelectTrigger>
                           <SelectValue
                             id='role'
                             placeholder='Choose user role'
@@ -170,7 +187,12 @@ const UserForm = ({
               <DialogClose asChild>
                 <Button variant='outline'>Cancel</Button>
               </DialogClose>
-              <Button type='submit'>Save</Button>
+              <Button type='submit' disabled={isPending}>
+                {isPending && (
+                  <Loader2Icon className='animate-spin' />
+                )}
+                Save
+              </Button>
             </DialogFooter>
           </form>
         </Form>
