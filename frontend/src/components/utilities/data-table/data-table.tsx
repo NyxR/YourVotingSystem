@@ -19,17 +19,28 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-import PaginationTable from '@/components/utilities/pagination-table';
+import {
+  PaginationTable,
+  DataTableLoading,
+} from '@/components/utilities/data-table';
+
+import { OctagonX, OctagonAlert } from 'lucide-react';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
+  error?: boolean;
+  error_message?: string;
+  loading?: boolean;
 }
 
-export function DataTable<TData, TValue>({
+export const DataTable = <TData, TValue>({
   columns,
   data,
-}: DataTableProps<TData, TValue>) {
+  error,
+  error_message,
+  loading,
+}: DataTableProps<TData, TValue>) => {
   const table = useReactTable({
     data,
     columns,
@@ -67,7 +78,7 @@ export function DataTable<TData, TValue>({
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows?.length ? (
+            {!loading && table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
@@ -87,9 +98,13 @@ export function DataTable<TData, TValue>({
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className='h-24 text-center'
+                  className='h-[200px] text-center'
                 >
-                  No results.
+                  <DataTableLoading
+                    error={error}
+                    error_message={error_message}
+                    loading={loading}
+                  />
                 </TableCell>
               </TableRow>
             )}
@@ -107,4 +122,4 @@ export function DataTable<TData, TValue>({
       </div>
     </div>
   );
-}
+};

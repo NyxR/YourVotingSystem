@@ -42,6 +42,7 @@ import { useForm } from 'react-hook-form';
 import { createUserFormSchema } from '@/lib/validations/userform.schema';
 import { addUserSafeAction } from '@/actions/users.actions';
 import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 type UserFormProps = {
   btn_title: string;
@@ -66,10 +67,16 @@ const UserForm = ({
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
 
   // const { executeAsync, result } = useAction(addUserSafeAction, {
   //   onSuccess: async () => {},
   // });
+
+  const handleCloseModal = (open: boolean) => {
+    setOpen(open);
+    form.reset();
+  };
 
   const onSubmit = async (
     values: z.infer<typeof createUserFormSchema>
@@ -97,14 +104,14 @@ const UserForm = ({
           description: result_data?.message,
           variant: 'success',
         });
-        form.reset();
-        setOpen(false);
+        handleCloseModal(false);
+        router.refresh();
       }
     });
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleCloseModal}>
       <DialogTrigger asChild>
         <Button>{btn_title}</Button>
       </DialogTrigger>

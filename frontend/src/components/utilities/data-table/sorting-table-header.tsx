@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { HeaderContext } from '@tanstack/react-table';
 import { Funnel } from 'lucide-react';
@@ -14,7 +16,7 @@ type SortingTableHeaderProps<M, T> = {
   options: T[];
 };
 
-const SortingTableHeader = <M, T>({
+export const SortingTableHeader = <M, T>({
   info,
   name,
   options,
@@ -57,5 +59,3 @@ const SortingTableHeader = <M, T>({
     </div>
   );
 };
-
-export default SortingTableHeader;

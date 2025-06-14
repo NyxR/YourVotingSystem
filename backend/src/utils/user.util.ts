@@ -6,14 +6,14 @@ export const SERVER_MSG_USER = {
     FIND: 'Fetched user successfully',
     INSERT: 'Created user successfully',
     UPDATE: '',
-    DELETE: '',
+    DELETE: 'Delete user successfully',
   },
   FAILED: {
     FIND: 'Error occured when fetching users, Please try again',
     INSERT: 'Error occured when adding user, Please try again',
     DUPLICATE: 'Email Address already used',
     UPDATE: '',
-    DELETE: '',
+    DELETE: 'Error occured when deleting user, Please try again',
   },
 };
 

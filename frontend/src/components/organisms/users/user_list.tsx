@@ -1,83 +1,32 @@
-'use client';
 import React from 'react';
-import { DataTable } from '@/components/utilities/data-table';
-import { data, User, Role } from '@/lib/data';
-import { Separator } from '@/components/ui/separator';
-import { createColumnHelper } from '@tanstack/react-table';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
-import DefaultTableHeader from '@/components/utilities/default-table-header';
-import SortingTableHeader from '@/components/utilities/sorting-table-header';
-import { cn } from '@/lib/utils';
+import UserTable from './user_table';
+import axios, { AxiosError } from 'axios';
+import { USER_ENDPOINTS } from '@/lib/api_urls';
+import { TUser } from '@/lib/validations/userform.schema';
 
-const columnHelper = createColumnHelper<User>();
-const columns = [
-  columnHelper.display({
-    id: 'select',
-    header: ({ table }) => (
-      <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && 'indeterminate')
-        }
-        onCheckedChange={(value) =>
-          table.toggleAllPageRowsSelected(!!value)
-        }
-        aria-label='Select all'
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label='Select row'
-      />
-    ),
-  }),
-  columnHelper.accessor('username', {
-    header: (info) => (
-      <DefaultTableHeader info={info} name='Username' />
-    ),
-    cell: (info) => info.getValue(),
-  }),
-  columnHelper.accessor('email', {
-    header: (info) => (
-      <DefaultTableHeader info={info} name='Email Address' />
-    ),
-    cell: (info) => info.getValue(),
-  }),
-  columnHelper.accessor('role', {
-    header: (info) => {
-      const optionRoles = Array.from(
-        new Set(data.map((user) => user.role))
-      );
-      return (
-        <SortingTableHeader
-          info={info}
-          name='Role'
-          options={optionRoles}
-        />
-      );
-    },
-    cell: ({ row }) => {
-      const role: string = row.getValue('role');
-      return (
-        <Badge
-          className='max-w-20 flex items-center justify-center'
-          variant={role === 'Admin' ? 'default' : 'destructive'}
-        >
-          {role}
-        </Badge>
-      );
-    },
-    filterFn: (row, columnId, filterValue) => {
-      return filterValue.includes(row.getValue(columnId));
-    },
-  }),
-];
-
-const UserList = () => {
-  return <DataTable<User, any> columns={columns} data={data} />;
+const UserList = async () => {
+  let users_data: TUser[] = [];
+  let err: boolean = false;
+  let errMsg = undefined;
+  try {
+    const res = await axios.get(USER_ENDPOINTS.list);
+    const users = res?.data.data;
+    if (users && Array.isArray(users)) {
+      users_data = users.map((user) => ({
+        id: user.id,
+        name: user.username,
+        email: user.email,
+        role: user.role,
+      }));
+    }
+  } catch (error) {
+    err = true;
+    errMsg = 'Error occured when fetching users, Please try again';
+    users_data = [];
+  }
+  return (
+    <UserTable error={err} error_message={errMsg} data={users_data} />
+  );
 };
 
 export default UserList;

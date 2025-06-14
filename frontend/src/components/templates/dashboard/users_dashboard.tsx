@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import UserList from '@/components/organisms/users/user_list';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import UserForm from '@/components/organisms/users/user_form';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const UsersPage = () => {
   return (
@@ -17,7 +18,9 @@ const UsersPage = () => {
           />
         </div>
         <div className=''>
-          <UserList />
+          <Suspense fallback={<Skeleton className='h-[400px]' />}>
+            <UserList />
+          </Suspense>
         </div>
       </div>
     </div>

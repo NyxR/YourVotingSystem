@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import {
   Pagination,
@@ -76,7 +78,7 @@ const PaginationItemRender = ({
   }
 };
 
-const PaginationTable = <TData,>({
+export const PaginationTable = <TData,>({
   table,
 }: PaginationTableProps<TData>) => {
   const currentPage = table.getState().pagination.pageIndex + 1;
@@ -108,5 +110,3 @@ const PaginationTable = <TData,>({
     </Pagination>
   );
 };
-
-export default PaginationTable;

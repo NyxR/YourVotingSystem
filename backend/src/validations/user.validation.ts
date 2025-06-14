@@ -22,3 +22,10 @@ export const insertUserSchema = z.object({
 });
 
 export type TUser = z.infer<typeof insertUserSchema>;
+
+export const deleteUserSchema = z.object({
+  id: z.string({
+    required_error: 'id is required',
+    invalid_type_error: 'id must be a string',
+  }),
+});

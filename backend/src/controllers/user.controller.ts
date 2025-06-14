@@ -3,7 +3,11 @@ import {
   SERVER_MSG_USER,
   duplicateUserHandler,
 } from '@utils/user.util';
-import { findUsers, createUser } from '@services/user.service';
+import {
+  findUsers,
+  createUser,
+  removeUser,
+} from '@services/user.service';
 
 export const getUsers = async (req: Request, res: Response) => {
   try {
@@ -37,6 +41,22 @@ export const addUser = async (req: Request, res: Response) => {
       error: handled_error.error,
       message: SERVER_MSG_USER.FAILED.INSERT,
       data: handled_error.message,
+    });
+  }
+};
+
+export const deleteUser = async (req: Request, res: Response) => {
+  const { id } = req.body;
+  try {
+    const users = await removeUser(id);
+    res
+      .status(200)
+      .send({ message: SERVER_MSG_USER.SUCCESS.DELETE, data: users });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({
+      error: 'Internal Server Error',
+      message: SERVER_MSG_USER.FAILED.DELETE,
     });
   }
 };

@@ -4,4 +4,5 @@ const USER_ROOT = `${BASE_API_URL}/user`;
 export const USER_ENDPOINTS = {
   list: `${USER_ROOT}/list`,
   add: `${USER_ROOT}/add`,
+  delete: `${USER_ROOT}/delete`,
 };

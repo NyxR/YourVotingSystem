@@ -9,4 +9,14 @@ export const createUserFormSchema = z.object({
   role: z.string().min(1, 'Role is required'),
 });
 
+export const deleteUserSchema = z.object({
+  id: z.string(),
+});
+
 export type TUserFormData = z.infer<typeof createUserFormSchema>;
+
+const UserSchema = createUserFormSchema.extend({
+  id: z.string(),
+});
+
+export type TUser = z.infer<typeof UserSchema>;

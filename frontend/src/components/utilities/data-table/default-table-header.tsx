@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { HeaderContext } from '@tanstack/react-table';
 import { ArrowUpDown } from 'lucide-react';
@@ -7,7 +9,7 @@ type DefaultTableHeaderProps<M, T> = {
   name: string;
 };
 
-const DefaultTableHeader = <M, T>({
+export const DefaultTableHeader = <M, T>({
   info,
   name,
 }: DefaultTableHeaderProps<M, T>) => {
@@ -26,5 +28,3 @@ const DefaultTableHeader = <M, T>({
     </div>
   );
 };
-
-export default DefaultTableHeader;

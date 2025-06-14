@@ -3,7 +3,14 @@ import { generatePassword } from '@utils/user.util';
 import { TUser } from '@validations/user.validation';
 
 export const findUsers = async () => {
-  return User.findMany();
+  return User.findMany({
+    select: {
+      id: true,
+      username: true,
+      email: true,
+      role: true,
+    },
+  });
 };
 
 export const createUser = async (user_data: TUser) => {
@@ -16,4 +23,10 @@ export const createUser = async (user_data: TUser) => {
     },
   });
   return user;
+};
+
+export const removeUser = async (user_id: string) => {
+  return await User.delete({
+    where: { id: user_id },
+  });
 };
