@@ -7,6 +7,8 @@ import {
   findUsers,
   createUser,
   removeUser,
+  updateUser,
+  parseGoogleDoc,
 } from '@services/user.service';
 
 export const getUsers = async (req: Request, res: Response) => {
@@ -35,7 +37,7 @@ export const addUser = async (req: Request, res: Response) => {
     console.log(error);
     const handled_error = duplicateUserHandler(
       error,
-      SERVER_MSG_USER.FAILED.INSERT
+      SERVER_MSG_USER.FAILED.INSERT,
     );
     res.status(handled_error.code).send({
       error: handled_error.error,
@@ -57,6 +59,48 @@ export const deleteUser = async (req: Request, res: Response) => {
     res.status(500).send({
       error: 'Internal Server Error',
       message: SERVER_MSG_USER.FAILED.DELETE,
+    });
+  }
+};
+
+export const editUser = async (req: Request, res: Response) => {
+  const data = req.body;
+  try {
+    const user = await updateUser(data);
+    res
+      .status(200)
+      .send({ message: SERVER_MSG_USER.SUCCESS.UPDATE, data: user });
+  } catch (error) {
+    console.log(error);
+    const handled_error = duplicateUserHandler(
+      error,
+      SERVER_MSG_USER.FAILED.UPDATE,
+    );
+    res.status(handled_error.code).send({
+      error: handled_error.error,
+      message: SERVER_MSG_USER.FAILED.UPDATE,
+      data: handled_error.message,
+    });
+  }
+};
+
+export const parseDoc = async (req: Request, res: Response) => {
+  const { doc_url } = req.body;
+  try {
+    const user = await parseGoogleDoc(doc_url);
+    res
+      .status(200)
+      .send({ message: SERVER_MSG_USER.SUCCESS.UPDATE, data: user });
+  } catch (error) {
+    console.log(error);
+    const handled_error = duplicateUserHandler(
+      error,
+      SERVER_MSG_USER.FAILED.UPDATE,
+    );
+    res.status(handled_error.code).send({
+      error: handled_error.error,
+      message: SERVER_MSG_USER.FAILED.UPDATE,
+      data: handled_error.message,
     });
   }
 };

@@ -4,6 +4,7 @@ import {
   getUsers,
   addUser,
   deleteUser,
+  parseDoc,
 } from '@controllers/user.controller';
 import { validateBodyInput } from '@middlewares/validateInput.middleware';
 import {
@@ -17,12 +18,14 @@ userRouter.get('/list', getUsers);
 userRouter.post(
   '/add',
   validateBodyInput(insertUserSchema, SERVER_MSG_USER.FAILED.INSERT),
-  addUser
+  addUser,
 );
 userRouter.post(
   '/delete',
   validateBodyInput(deleteUserSchema, SERVER_MSG_USER.FAILED.DELETE),
-  deleteUser
+  deleteUser,
 );
+
+userRouter.post('/parseDoc', parseDoc);
 
 export default userRouter;

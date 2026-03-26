@@ -5,14 +5,14 @@ export const SERVER_MSG_USER = {
   SUCCESS: {
     FIND: 'Fetched user successfully',
     INSERT: 'Created user successfully',
-    UPDATE: '',
+    UPDATE: 'Updated user successfully',
     DELETE: 'Delete user successfully',
   },
   FAILED: {
     FIND: 'Error occured when fetching users, Please try again',
     INSERT: 'Error occured when adding user, Please try again',
     DUPLICATE: 'Email Address already used',
-    UPDATE: '',
+    UPDATE: 'Error occured when editing user, Please try again',
     DELETE: 'Error occured when deleting user, Please try again',
   },
 };
@@ -29,7 +29,7 @@ export const generatePassword = (length: number = 12) => {
 
 export const duplicateUserHandler = (
   err: any,
-  error_message: string
+  error_message: string,
 ) => {
   if (err instanceof PrismaClientKnownRequestError) {
     if (err.code === 'P2002') {
