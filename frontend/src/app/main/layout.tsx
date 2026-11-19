@@ -17,7 +17,14 @@ export default async function MainLayout({ children }: { children: React.ReactNo
     >
       <AppSidebar
         variant='inset'
-        user={{ name: user.username, email: user.email, role: user.role }}
+        user={{
+          name: user.username,
+          email: user.email,
+          role: user.role,
+          memberType: user.memberType,
+          phone: user.phone,
+          responsibilities: user.responsibilities,
+        }}
       />
       <SidebarInset>
         <SiteHeader />

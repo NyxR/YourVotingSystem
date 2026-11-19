@@ -12,6 +12,7 @@ const TITLES: [prefix: string, key: keyof Messages['nav']][] = [
   ['/main/finance', 'financeOverview'],
   ['/main/transactions', 'transactions'],
   ['/main/categories', 'categories'],
+  ['/main/members', 'members'],
   ['/main/users', 'users'],
 ];
 

@@ -3,6 +3,7 @@
 import type { User as AuthUser } from '@supabase/supabase-js';
 import prisma from '@/lib/prisma';
 import { normalizeRole } from '@/lib/roles';
+import { normalizeResponsibilities } from '@/lib/responsibilities';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { UserRow } from './schemas/user.schema';
 
@@ -32,6 +33,9 @@ export async function getUsers(): Promise<UserRow[]> {
       username: p.username,
       email: p.email,
       role: normalizeRole(p.role),
+      memberType: p.memberType,
+      phone: p.phone,
+      responsibilities: normalizeResponsibilities(p.responsibilities),
       status: !auth ? 'not_invited' : auth.last_sign_in_at ? 'active' : 'invited',
       lastSignInAt: auth?.last_sign_in_at ?? null,
       createdAt: p.createdAt.toISOString(),

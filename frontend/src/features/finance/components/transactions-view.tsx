@@ -98,8 +98,15 @@ export function TransactionsView({
   const [editing, setEditing] = useState<TransactionRow | undefined>();
   const [deleting, setDeleting] = useState<TransactionRow | null>(null);
 
-  const setFilter = <K extends keyof Filters>(key: K, value: Filters[K]) =>
+  // Pagination is owned here and reset to page 1 from the filter handlers.
+  // (TanStack's autoResetPageIndex schedules a state update that can fire
+  // before mount, which React warns about.)
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 20 });
+  const toFirstPage = () => setPagination((p) => ({ ...p, pageIndex: 0 }));
+  const setFilter = <K extends keyof Filters>(key: K, value: Filters[K]) => {
     setFilters((f) => ({ ...f, [key]: value }));
+    toFirstPage();
+  };
   const isFiltered = JSON.stringify(filters) !== JSON.stringify(defaultFilters(defaultRange));
 
   const filtered = useMemo(() => {
@@ -290,14 +297,14 @@ export function TransactionsView({
   const table = useReactTable({
     data: filtered,
     columns,
-    state: { sorting },
+    state: { sorting, pagination },
+    onPaginationChange: setPagination,
     onSortingChange: setSorting,
     getRowId: (r) => r.id,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    autoResetPageIndex: true,
-    initialState: { pagination: { pageSize: 20 } },
+    autoResetPageIndex: false,
   });
 
   const exportCsv = () => {
@@ -310,7 +317,8 @@ export function TransactionsView({
   };
 
   // Changing the type drops selected categories that belong to the other type.
-  const changeType = (type: string) =>
+  const changeType = (type: string) => {
+    toFirstPage();
     setFilters((f) => ({
       ...f,
       type,
@@ -321,6 +329,7 @@ export function TransactionsView({
               (id) => id === NO_CATEGORY || categories.find((c) => c.id === id)?.type === type,
             ),
     }));
+  };
 
   return (
     <div className='flex flex-col gap-4 px-4 lg:px-6'>
@@ -395,7 +404,10 @@ export function TransactionsView({
           />
           <div className='ml-auto flex items-center gap-2'>
             {isFiltered && (
-              <Button variant='ghost' size='sm' onClick={() => setFilters(defaultFilters(defaultRange))}>
+              <Button variant='ghost' size='sm' onClick={() => {
+                  setFilters(defaultFilters(defaultRange));
+                  toFirstPage();
+                }}>
                 <FilterXIcon /> {t.transactions.resetFilters}
               </Button>
             )}

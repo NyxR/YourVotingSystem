@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation';
 import prisma from '@/lib/prisma';
 import { createSessionClient } from '@/lib/supabase/server';
 import { normalizeRole, type Role } from '@/lib/roles';
+import type { MemberType } from '@/lib/member-types';
+import { normalizeResponsibilities, type Responsibility } from '@/lib/responsibilities';
 import { getI18n } from '@/i18n/server';
 import type { Messages } from '@/i18n/messages/en';
 
@@ -12,6 +14,9 @@ export type CurrentUser = {
   email: string;
   username: string;
   role: Role;
+  memberType: MemberType;
+  phone: string | null;
+  responsibilities: Responsibility[];
 };
 
 export const can = {
@@ -67,6 +72,9 @@ export async function findProfileForAuthUser(user: {
     email: profile.email,
     username: profile.username,
     role: normalizeRole(profile.role),
+    memberType: profile.memberType,
+    phone: profile.phone,
+    responsibilities: normalizeResponsibilities(profile.responsibilities),
   };
 }
 

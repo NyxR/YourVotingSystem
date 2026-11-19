@@ -1,21 +1,45 @@
 import { z } from 'zod';
 import { ROLES, type Role } from '@/lib/roles';
+import { MEMBER_TYPES, type MemberType } from '@/lib/member-types';
+import { isValidPhone } from '@/lib/phone';
+import { RESPONSIBILITIES, type Responsibility } from '@/lib/responsibilities';
 import type { ValidationKey } from '@/i18n/validation';
 
 // Error messages are keys of t.validation, translated where they are shown.
+
+/** Optional contact number: empty, or a valid Canada/US number in any format. */
+export const phoneField = z
+  .string()
+  .trim()
+  .refine((v) => v === '' || isValidPhone(v), { message: 'phoneInvalid' satisfies ValidationKey });
+
+export const responsibilitiesField = z.array(z.enum(RESPONSIBILITIES));
 
 export const inviteUserSchema = z.object({
   username: z.string().trim().min(1, 'nameRequired' satisfies ValidationKey).max(80, 'personNameTooLong' satisfies ValidationKey),
   email: z.email('emailInvalid' satisfies ValidationKey).trim().toLowerCase(),
   role: z.enum(ROLES),
+  memberType: z.enum(MEMBER_TYPES),
+  phone: phoneField,
+  responsibilities: responsibilitiesField,
 });
 export type TInviteUser = z.infer<typeof inviteUserSchema>;
 
 export const updateUserSchema = z.object({
   username: z.string().trim().min(1, 'nameRequired' satisfies ValidationKey).max(80, 'personNameTooLong' satisfies ValidationKey),
   role: z.enum(ROLES),
+  memberType: z.enum(MEMBER_TYPES),
+  phone: phoneField,
+  responsibilities: responsibilitiesField,
 });
 export type TUpdateUser = z.infer<typeof updateUserSchema>;
+
+/** What a user may change about themselves. */
+export const profileSchema = z.object({
+  phone: phoneField,
+  responsibilities: responsibilitiesField,
+});
+export type TProfile = z.infer<typeof profileSchema>;
 
 /**
  * - not_invited: profile exists (e.g. from before Supabase Auth) but no login yet
@@ -29,6 +53,10 @@ export type UserRow = {
   username: string;
   email: string;
   role: Role;
+  memberType: MemberType;
+  /** E.164, or null when not provided. */
+  phone: string | null;
+  responsibilities: Responsibility[];
   status: UserStatus;
   lastSignInAt: string | null;
   createdAt: string;

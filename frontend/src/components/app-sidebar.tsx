@@ -7,6 +7,7 @@ import {
   PieChartIcon,
   TagsIcon,
   UsersIcon,
+  UsersRoundIcon,
 } from 'lucide-react';
 import { BrandLogo } from '@/components/brand-logo';
 import { NavMain, type NavItem } from '@/components/nav-main';
@@ -23,8 +24,17 @@ import {
 import { APP_NAME } from '@/lib/app';
 import { useI18n } from '@/i18n/client';
 import type { Role } from '@/lib/roles';
+import type { MemberType } from '@/lib/member-types';
+import type { Responsibility } from '@/lib/responsibilities';
 
-export type SidebarUser = { name: string; email: string; role: Role };
+export type SidebarUser = {
+  name: string;
+  email: string;
+  role: Role;
+  memberType: MemberType;
+  phone: string | null;
+  responsibilities: Responsibility[];
+};
 
 export function AppSidebar({
   user,
@@ -35,6 +45,9 @@ export function AppSidebar({
     { title: t.nav.overview, url: '/main/finance', icon: <PieChartIcon /> },
     { title: t.nav.transactions, url: '/main/transactions', icon: <ArrowLeftRightIcon /> },
     { title: t.nav.categories, url: '/main/categories', icon: <TagsIcon /> },
+  ];
+  const communityNav: NavItem[] = [
+    { title: t.nav.members, url: '/main/members', icon: <UsersRoundIcon /> },
   ];
   const adminNav: NavItem[] = [{ title: t.nav.users, url: '/main/users', icon: <UsersIcon /> }];
 
@@ -54,6 +67,7 @@ export function AppSidebar({
       </SidebarHeader>
       <SidebarContent>
         <NavMain label={t.nav.finance} items={financeNav} />
+        <NavMain label={t.nav.community} items={communityNav} />
         {user.role === 'admin' && <NavMain label={t.nav.administration} items={adminNav} />}
       </SidebarContent>
       <SidebarFooter>

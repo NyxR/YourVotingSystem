@@ -15,17 +15,34 @@ datasource db {
 /// Application profile. Credentials live in Supabase Auth; `authId` links
 /// the two. Roles: "admin" | "treasurer" | "viewer".
 model User {
-  id                  String        @id @default(cuid())
-  authId              String?       @unique
+  id                  String           @id @default(cuid())
+  authId              String?          @unique
   username            String
-  email               String        @unique
+  email               String           @unique
+  /// Optional contact number, stored as E.164 (+1XXXXXXXXXX, Canada/US).
+  phone               String?
   /// Legacy column, unused since Supabase Auth handles credentials.
   password            String?
   role                String
-  createdAt           DateTime      @default(now())
-  updatedAt           DateTime      @default(now()) @updatedAt
-  transactionsCreated Transaction[] @relation("TransactionCreatedBy")
-  transactionsUpdated Transaction[] @relation("TransactionUpdatedBy")
+  /// Church membership: communicant (Mpandray) or not (Tsy Mpandray).
+  memberType          MemberType       @default(MPANDRAY)
+  /// Church responsibilities (informational flags; no effect on access).
+  responsibilities    Responsibility[] @default([MPIARA_MIVAVAKA])
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @default(now()) @updatedAt
+  transactionsCreated Transaction[]    @relation("TransactionCreatedBy")
+  transactionsUpdated Transaction[]    @relation("TransactionUpdatedBy")
+}
+
+enum Responsibility {
+  BIRAO
+  DIAKONA
+  MPIARA_MIVAVAKA
+}
+
+enum MemberType {
+  MPANDRAY
+  TSY_MPANDRAY
 }
 
 // ─── Finance ───────────────────────────────────────────────────

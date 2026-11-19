@@ -8,11 +8,15 @@ import { getSiteUrl } from '@/lib/site-url';
 import { getI18n } from '@/i18n/server';
 import { translateValidation } from '@/i18n/validation';
 import type { Messages } from '@/i18n/messages/en';
+import { toE164 } from '@/lib/phone';
+import { normalizeResponsibilities } from '@/lib/responsibilities';
 import { listAuthUsers } from '../queries';
 import {
   inviteUserSchema,
+  profileSchema,
   updateUserSchema,
   type TInviteUser,
+  type TProfile,
   type TUpdateUser,
 } from '../schemas/user.schema';
 
@@ -27,6 +31,9 @@ async function invalid(message: string | undefined): Promise<ActionResult> {
   const { t } = await getI18n();
   return { success: false, message: translateValidation(t, message) };
 }
+
+/** Empty -> null; otherwise the validated number in E.164. */
+const storedPhone = (phone: string) => (phone ? toE164(phone) : null);
 
 const setPasswordRedirect = async () =>
   `${await getSiteUrl()}/auth/confirm?next=/set-password`;
@@ -70,7 +77,9 @@ export async function inviteUser(values: TInviteUser): Promise<ActionResult> {
     if (!parsed.success) {
       return invalid(parsed.error.issues[0]?.message);
     }
-    const { email, username, role } = parsed.data;
+    const { email, username, role, memberType } = parsed.data;
+    const phone = storedPhone(parsed.data.phone);
+    const responsibilities = normalizeResponsibilities(parsed.data.responsibilities);
 
     const existing = await prisma.user.findFirst({
       where: { email: { equals: email, mode: 'insensitive' } },
@@ -84,10 +93,12 @@ export async function inviteUser(values: TInviteUser): Promise<ActionResult> {
       if (existing) {
         await prisma.user.update({
           where: { id: existing.id },
-          data: { authId, username, role },
+          data: { authId, username, role, memberType, phone, responsibilities },
         });
       } else {
-        await prisma.user.create({ data: { authId, email, username, role } });
+        await prisma.user.create({
+          data: { authId, email, username, role, memberType, phone, responsibilities },
+        });
       }
     } catch (e) {
       // Don't leave an orphaned login behind.
@@ -115,6 +126,23 @@ export async function resendAccessEmail(userId: string): Promise<ActionResult> {
   }, 'userEmail');
 }
 
+/** Lets any signed-in user update their own contact number and responsibilities. */
+export async function updateMyProfile(values: TProfile): Promise<ActionResult> {
+  return runAction(async () => {
+    const me = await authorize();
+    const parsed = profileSchema.safeParse(values);
+    if (!parsed.success) return invalid(parsed.error.issues[0]?.message);
+    await prisma.user.update({
+      where: { id: me.id },
+      data: {
+        phone: storedPhone(parsed.data.phone),
+        responsibilities: normalizeResponsibilities(parsed.data.responsibilities),
+      },
+    });
+    revalidatePath('/main', 'layout');
+  }, 'userUpdate');
+}
+
 async function countOtherAdmins(excludeId: string) {
   return prisma.user.count({ where: { role: 'admin', id: { not: excludeId } } });
 }
@@ -133,7 +161,14 @@ export async function updateUser(userId: string, values: TUpdateUser): Promise<A
       return fail('lastAdmin');
     }
 
-    await prisma.user.update({ where: { id: userId }, data: parsed.data });
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...parsed.data,
+        phone: storedPhone(parsed.data.phone),
+        responsibilities: normalizeResponsibilities(parsed.data.responsibilities),
+      },
+    });
     revalidatePath('/main', 'layout');
   }, 'userUpdate');
 }
