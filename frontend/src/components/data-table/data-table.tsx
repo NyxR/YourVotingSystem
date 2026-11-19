@@ -30,6 +30,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
+import { fmt } from '@/i18n/config';
+import { useI18n } from '@/i18n/client';
 
 /**
  * Renders a TanStack table with the dashboard template's styling plus
@@ -37,13 +39,14 @@ import { cn } from '@/lib/utils';
  */
 export function DataTable<TData>({
   table,
-  emptyMessage = 'No results.',
+  emptyMessage,
   footer,
 }: {
   table: TanstackTable<TData>;
   emptyMessage?: React.ReactNode;
   footer?: React.ReactNode;
 }) {
+  const { t } = useI18n();
   const columnCount = table.getVisibleLeafColumns().length;
   const pageCount = Math.max(table.getPageCount(), 1);
 
@@ -98,7 +101,7 @@ export function DataTable<TData>({
                   colSpan={columnCount}
                   className='h-24 text-center text-muted-foreground'
                 >
-                  {emptyMessage}
+                  {emptyMessage ?? t.common.noResults}
                 </TableCell>
               </TableRow>
             )}
@@ -109,12 +112,12 @@ export function DataTable<TData>({
 
       <div className='flex items-center justify-between px-2'>
         <div className='hidden flex-1 text-sm text-muted-foreground lg:flex'>
-          {table.getFilteredRowModel().rows.length} row(s)
+          {fmt(t.common.rows, { count: table.getFilteredRowModel().rows.length })}
         </div>
         <div className='flex w-full items-center gap-8 lg:w-fit'>
           <div className='hidden items-center gap-2 lg:flex'>
             <Label htmlFor='rows-per-page' className='text-sm font-medium'>
-              Rows per page
+              {t.common.rowsPerPage}
             </Label>
             <Select
               value={`${table.getState().pagination.pageSize}`}
@@ -135,7 +138,10 @@ export function DataTable<TData>({
             </Select>
           </div>
           <div className='flex w-fit items-center justify-center text-sm font-medium'>
-            Page {table.getState().pagination.pageIndex + 1} of {pageCount}
+            {fmt(t.common.pageOf, {
+              page: table.getState().pagination.pageIndex + 1,
+              total: pageCount,
+            })}
           </div>
           <div className='ml-auto flex items-center gap-2 lg:ml-0'>
             <Button
@@ -144,7 +150,7 @@ export function DataTable<TData>({
               onClick={() => table.setPageIndex(0)}
               disabled={!table.getCanPreviousPage()}
             >
-              <span className='sr-only'>Go to first page</span>
+              <span className='sr-only'>{t.common.firstPage}</span>
               <ChevronsLeftIcon />
             </Button>
             <Button
@@ -154,7 +160,7 @@ export function DataTable<TData>({
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
             >
-              <span className='sr-only'>Go to previous page</span>
+              <span className='sr-only'>{t.common.previousPage}</span>
               <ChevronLeftIcon />
             </Button>
             <Button
@@ -164,7 +170,7 @@ export function DataTable<TData>({
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
             >
-              <span className='sr-only'>Go to next page</span>
+              <span className='sr-only'>{t.common.nextPage}</span>
               <ChevronRightIcon />
             </Button>
             <Button
@@ -174,7 +180,7 @@ export function DataTable<TData>({
               onClick={() => table.setPageIndex(table.getPageCount() - 1)}
               disabled={!table.getCanNextPage()}
             >
-              <span className='sr-only'>Go to last page</span>
+              <span className='sr-only'>{t.common.lastPage}</span>
               <ChevronsRightIcon />
             </Button>
           </div>

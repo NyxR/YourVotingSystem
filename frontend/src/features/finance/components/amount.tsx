@@ -1,8 +1,11 @@
+'use client';
+
 import { formatCAD } from '@/lib/money';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/i18n/client';
 import type { TransactionType } from '../schemas';
 
-/** Signed, coloured amount: "+$1,200.00" for income, "−$45.10" for expenses. */
+/** Signed, coloured amount: "+$1,200.00" / "−45,10 $" in the current language. */
 export function Amount({
   cents,
   type,
@@ -12,6 +15,7 @@ export function Amount({
   type: TransactionType;
   className?: string;
 }) {
+  const { intl } = useI18n();
   const isIncome = type === 'INCOME';
   return (
     <span
@@ -22,7 +26,7 @@ export function Amount({
       )}
     >
       {isIncome ? '+' : '−'}
-      {formatCAD(cents)}
+      {formatCAD(cents, intl)}
     </span>
   );
 }

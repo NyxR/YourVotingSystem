@@ -1,15 +1,18 @@
 import { z } from 'zod';
 import { ROLES, type Role } from '@/lib/roles';
+import type { ValidationKey } from '@/i18n/validation';
+
+// Error messages are keys of t.validation, translated where they are shown.
 
 export const inviteUserSchema = z.object({
-  username: z.string().trim().min(1, 'Name is required.').max(80),
-  email: z.email('Enter a valid email address.').trim().toLowerCase(),
+  username: z.string().trim().min(1, 'nameRequired' satisfies ValidationKey).max(80, 'personNameTooLong' satisfies ValidationKey),
+  email: z.email('emailInvalid' satisfies ValidationKey).trim().toLowerCase(),
   role: z.enum(ROLES),
 });
 export type TInviteUser = z.infer<typeof inviteUserSchema>;
 
 export const updateUserSchema = z.object({
-  username: z.string().trim().min(1, 'Name is required.').max(80),
+  username: z.string().trim().min(1, 'nameRequired' satisfies ValidationKey).max(80, 'personNameTooLong' satisfies ValidationKey),
   role: z.enum(ROLES),
 });
 export type TUpdateUser = z.infer<typeof updateUserSchema>;

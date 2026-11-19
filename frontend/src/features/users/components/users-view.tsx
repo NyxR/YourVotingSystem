@@ -11,6 +11,7 @@ import {
   type SortingState,
 } from '@tanstack/react-table';
 import { formatDistanceToNow } from 'date-fns';
+import { enCA, frCA } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { EllipsisVerticalIcon, SearchIcon, UserPlusIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -25,19 +26,23 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { DataTable, SortableHeader } from '@/components/data-table/data-table';
-import { ROLE_LABELS } from '@/lib/roles';
+import { fmt } from '@/i18n/config';
+import { useI18n } from '@/i18n/client';
+import type { Messages } from '@/i18n/messages/en';
 import { cn } from '@/lib/utils';
 import { deleteUser, resendAccessEmail } from '../actions/user.actions';
 import type { UserRow, UserStatus } from '../schemas/user.schema';
 import { EditUserDialog, InviteUserDialog } from './user-dialogs';
 
-const STATUS: Record<UserStatus, { label: string; dot: string }> = {
-  active: { label: 'Active', dot: 'bg-primary' },
-  invited: { label: 'Invite pending', dot: 'bg-muted-foreground' },
-  not_invited: { label: 'Not invited', dot: 'border border-muted-foreground' },
+const STATUS: Record<UserStatus, { label: keyof Messages['users']; dot: string }> = {
+  active: { label: 'statusActive', dot: 'bg-primary' },
+  invited: { label: 'statusInvited', dot: 'bg-muted-foreground' },
+  not_invited: { label: 'statusNotInvited', dot: 'border border-muted-foreground' },
 };
 
 export function UsersView({ users, currentUserId }: { users: UserRow[]; currentUserId: string }) {
+  const { t, locale } = useI18n();
+  const dateLocale = locale === 'fr' ? frCA : enCA;
   const [search, setSearch] = useState('');
   const [sorting, setSorting] = useState<SortingState>([]);
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -48,7 +53,7 @@ export function UsersView({ users, currentUserId }: { users: UserRow[]; currentU
     const result = await resendAccessEmail(u.id);
     if (result.success) {
       toast.success(
-        u.status === 'active' ? `Password reset email sent to ${u.email}` : `Invitation sent to ${u.email}`,
+        fmt(u.status === 'active' ? t.users.resetSent : t.users.inviteSent, { email: u.email }),
       );
     } else {
       toast.error(result.message);
@@ -59,13 +64,13 @@ export function UsersView({ users, currentUserId }: { users: UserRow[]; currentU
     () => [
       {
         accessorKey: 'username',
-        header: ({ column }) => <SortableHeader column={column} title='Name' />,
+        header: ({ column }) => <SortableHeader column={column} title={t.users.colName} />,
         cell: ({ row }) => (
           <div className='flex flex-col'>
             <span className='font-medium'>
               {row.original.username}
               {row.original.id === currentUserId && (
-                <span className='ml-1.5 text-xs font-normal text-muted-foreground'>(you)</span>
+                <span className='ml-1.5 text-xs font-normal text-muted-foreground'>{t.users.you}</span>
               )}
             </span>
             <span className='text-xs text-muted-foreground'>{row.original.email}</span>
@@ -74,36 +79,39 @@ export function UsersView({ users, currentUserId }: { users: UserRow[]; currentU
       },
       {
         accessorKey: 'role',
-        header: ({ column }) => <SortableHeader column={column} title='Role' />,
+        header: ({ column }) => <SortableHeader column={column} title={t.users.colRole} />,
         cell: ({ row }) => (
           <Badge variant={row.original.role === 'admin' ? 'default' : 'outline'}>
-            {ROLE_LABELS[row.original.role]}
+            {t.roles[row.original.role]}
           </Badge>
         ),
       },
       {
         accessorKey: 'status',
-        header: 'Status',
+        header: t.users.colStatus,
         cell: ({ row }) => {
           const s = STATUS[row.original.status];
           return (
             <span className='flex items-center gap-2 text-sm'>
               <span className={cn('size-2 rounded-full', s.dot)} aria-hidden />
-              {s.label}
+              {t.users[s.label]}
             </span>
           );
         },
       },
       {
         accessorKey: 'lastSignInAt',
-        header: 'Last sign-in',
+        header: t.users.colLastSignIn,
         cell: ({ row }) =>
           row.original.lastSignInAt ? (
             <span className='text-sm text-muted-foreground'>
-              {formatDistanceToNow(new Date(row.original.lastSignInAt), { addSuffix: true })}
+              {formatDistanceToNow(new Date(row.original.lastSignInAt), {
+                addSuffix: true,
+                locale: dateLocale,
+              })}
             </span>
           ) : (
-            <span className='text-sm text-muted-foreground'>Never</span>
+            <span className='text-sm text-muted-foreground'>{t.common.never}</span>
           ),
       },
       {
@@ -120,19 +128,19 @@ export function UsersView({ users, currentUserId }: { users: UserRow[]; currentU
                   className='size-8 text-muted-foreground data-[state=open]:bg-muted'
                 >
                   <EllipsisVerticalIcon />
-                  <span className='sr-only'>Open menu</span>
+                  <span className='sr-only'>{t.common.openMenu}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align='end' className='w-52'>
-                <DropdownMenuItem onSelect={() => setEditing(u)}>Edit name or role</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setEditing(u)}>{t.users.editNameRole}</DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => sendEmail(u)}>
-                  {u.status === 'active' ? 'Send password reset' : 'Resend invitation'}
+                  {u.status === 'active' ? t.users.sendReset : t.users.resendInvite}
                 </DropdownMenuItem>
                 {!isMe && (
                   <>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem variant='destructive' onSelect={() => setDeleting(u)}>
-                      Remove user
+                      {t.users.remove}
                     </DropdownMenuItem>
                   </>
                 )}
@@ -142,7 +150,7 @@ export function UsersView({ users, currentUserId }: { users: UserRow[]; currentU
         },
       },
     ],
-    [currentUserId],
+    [currentUserId, t, dateLocale],
   );
 
   const table = useReactTable({
@@ -166,32 +174,32 @@ export function UsersView({ users, currentUserId }: { users: UserRow[]; currentU
         <div className='relative min-w-48 flex-1 sm:max-w-sm'>
           <SearchIcon className='pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground' />
           <Input
-            placeholder='Search by name or email…'
+            placeholder={t.users.searchPlaceholder}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className='pl-8'
-            aria-label='Search users'
+            aria-label={t.users.searchLabel}
           />
         </div>
         <Button size='sm' className='ml-auto' onClick={() => setInviteOpen(true)}>
-          <UserPlusIcon /> Invite user
+          <UserPlusIcon /> {t.users.invite}
         </Button>
       </div>
 
-      <DataTable table={table} emptyMessage='No users found.' />
+      <DataTable table={table} emptyMessage={t.users.empty} />
 
       <InviteUserDialog open={inviteOpen} onOpenChange={setInviteOpen} />
       <EditUserDialog user={editing} onClose={() => setEditing(null)} />
       <ConfirmDialog
         open={!!deleting}
         onOpenChange={(o) => !o && setDeleting(null)}
-        title={`Remove ${deleting?.username}?`}
-        description='They will no longer be able to sign in. Transactions they recorded are kept.'
-        confirmLabel='Remove user'
+        title={fmt(t.users.removeTitle, { name: deleting?.username ?? '' })}
+        description={t.users.removeDescription}
+        confirmLabel={t.users.remove}
         onConfirm={async () => {
           if (!deleting) return;
           const result = await deleteUser(deleting.id);
-          if (result.success) toast.success('User removed');
+          if (result.success) toast.success(t.users.removed);
           else {
             toast.error(result.message);
             return false;

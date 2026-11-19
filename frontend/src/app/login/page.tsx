@@ -1,14 +1,12 @@
 import type { Metadata } from 'next';
 import { AuthShell } from '@/features/auth/components/auth-shell';
 import { LoginForm } from '@/features/auth/components/login-form';
+import { getI18n } from '@/i18n/server';
 
-export const metadata: Metadata = { title: 'Sign in' };
-
-const ERRORS: Record<string, string> = {
-  link: 'That link is invalid or has expired. Request a new one.',
-  'no-access':
-    'Your account has no access to the app. Ask an administrator to invite you.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.auth.signIn };
+}
 
 export default async function LoginPage({
   searchParams,
@@ -16,13 +14,15 @@ export default async function LoginPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   const { error } = await searchParams;
+  const { t } = await getI18n();
+  const errors: Record<string, string> = {
+    link: t.auth.errorLink,
+    'no-access': t.auth.errorNoAccess,
+  };
 
   return (
-    <AuthShell
-      title='Welcome back'
-      description='Sign in with your email and password'
-    >
-      <LoginForm initialError={error ? ERRORS[error] : undefined} />
+    <AuthShell title={t.auth.welcomeBack} description={t.auth.signInDescription}>
+      <LoginForm initialError={error ? errors[error] : undefined} />
     </AuthShell>
   );
 }

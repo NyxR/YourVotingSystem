@@ -1,15 +1,17 @@
 import type { Metadata } from 'next';
 import { AuthShell } from '@/features/auth/components/auth-shell';
 import { ForgotPasswordForm } from '@/features/auth/components/forgot-password-form';
+import { getI18n } from '@/i18n/server';
 
-export const metadata: Metadata = { title: 'Reset password' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.auth.resetTitle };
+}
 
-export default function ForgotPasswordPage() {
+export default async function ForgotPasswordPage() {
+  const { t } = await getI18n();
   return (
-    <AuthShell
-      title='Reset your password'
-      description="Enter your email and we'll send you a link to choose a new password"
-    >
+    <AuthShell title={t.auth.resetTitle} description={t.auth.resetDescription}>
       <ForgotPasswordForm />
     </AuthShell>
   );

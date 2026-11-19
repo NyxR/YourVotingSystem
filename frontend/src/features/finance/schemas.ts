@@ -1,15 +1,13 @@
 import { z } from 'zod';
 import { parseAmountToCents } from '@/lib/money';
+import type { ValidationKey } from '@/i18n/validation';
+
+// Error messages are keys of t.validation, translated where they are shown.
 
 // ─── Enums (mirror prisma/schema.prisma) ──────────────────────
 
 export const TRANSACTION_TYPES = ['INCOME', 'EXPENSE'] as const;
 export type TransactionType = (typeof TRANSACTION_TYPES)[number];
-
-export const TRANSACTION_TYPE_LABELS: Record<TransactionType, string> = {
-  INCOME: 'Income',
-  EXPENSE: 'Expense',
-};
 
 export const PAYMENT_METHODS = [
   'CASH',
@@ -20,15 +18,6 @@ export const PAYMENT_METHODS = [
   'OTHER',
 ] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
-
-export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
-  CASH: 'Cash',
-  CHEQUE: 'Cheque',
-  E_TRANSFER: 'Interac e-Transfer',
-  CARD: 'Card',
-  DIRECT_DEPOSIT: 'Direct deposit',
-  OTHER: 'Other',
-};
 
 /** Select value meaning "no category" (Radix Select can't use ""). */
 export const NO_CATEGORY = '__none';
@@ -44,12 +33,10 @@ export const RECEIPT_MIME_TYPES: Record<string, string> = {
 };
 export const RECEIPT_ACCEPT = Object.keys(RECEIPT_MIME_TYPES).join(',');
 
-/** Returns an error message, or null when the file is acceptable. */
-export function validateReceipt(file: File): string | null {
-  if (!(file.type in RECEIPT_MIME_TYPES)) {
-    return 'Receipts must be a JPG, PNG, WebP image or a PDF.';
-  }
-  if (file.size > RECEIPT_MAX_BYTES) return 'Receipts must be 5 MB or smaller.';
+/** Returns a validation message key, or null when the file is acceptable. */
+export function validateReceipt(file: File): ValidationKey | null {
+  if (!(file.type in RECEIPT_MIME_TYPES)) return 'receiptType';
+  if (file.size > RECEIPT_MAX_BYTES) return 'receiptSize';
   return null;
 }
 
@@ -57,21 +44,21 @@ export function validateReceipt(file: File): string | null {
 
 export const transactionFormSchema = z.object({
   type: z.enum(TRANSACTION_TYPES),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Pick a date.'),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'datePick' satisfies ValidationKey),
   amount: z
     .string()
     .trim()
     .refine((v) => (parseAmountToCents(v) ?? 0) > 0, {
-      message: 'Enter a positive amount, e.g. 125.50',
+      message: 'amountPositive' satisfies ValidationKey,
     }),
   description: z
     .string()
     .trim()
-    .min(1, 'Add a short description.')
-    .max(300, 'Keep it under 300 characters.'),
+    .min(1, 'descriptionRequired' satisfies ValidationKey)
+    .max(300, 'descriptionTooLong' satisfies ValidationKey),
   categoryId: z.string(),
   paymentMethod: z.enum(PAYMENT_METHODS),
-  reference: z.string().trim().max(100, 'Keep it under 100 characters.'),
+  reference: z.string().trim().max(100, 'referenceTooLong' satisfies ValidationKey),
 });
 export type TransactionFormValues = z.infer<typeof transactionFormSchema>;
 
@@ -79,8 +66,8 @@ export const categoryFormSchema = z.object({
   name: z
     .string()
     .trim()
-    .min(1, 'Name is required.')
-    .max(60, 'Keep it under 60 characters.'),
+    .min(1, 'nameRequired' satisfies ValidationKey)
+    .max(60, 'categoryNameTooLong' satisfies ValidationKey),
   type: z.enum(TRANSACTION_TYPES),
 });
 export type CategoryFormValues = z.infer<typeof categoryFormSchema>;

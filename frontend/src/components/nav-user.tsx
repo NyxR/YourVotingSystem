@@ -17,7 +17,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { signOut } from '@/features/auth/actions/auth.actions';
-import { ROLE_LABELS } from '@/lib/roles';
+import { useI18n } from '@/i18n/client';
 import type { SidebarUser } from './app-sidebar';
 
 function initials(name: string) {
@@ -32,6 +32,7 @@ function initials(name: string) {
 }
 
 function UserSummary({ user }: { user: SidebarUser }) {
+  const { t } = useI18n();
   return (
     <>
       <span
@@ -43,7 +44,7 @@ function UserSummary({ user }: { user: SidebarUser }) {
       <div className='grid flex-1 text-left text-sm leading-tight'>
         <span className='truncate font-medium'>{user.name}</span>
         <span className='truncate text-xs text-muted-foreground'>
-          {ROLE_LABELS[user.role]} · {user.email}
+          {t.roles[user.role]} · {user.email}
         </span>
       </div>
     </>
@@ -52,6 +53,7 @@ function UserSummary({ user }: { user: SidebarUser }) {
 
 export function NavUser({ user }: { user: SidebarUser }) {
   const { isMobile } = useSidebar();
+  const { t } = useI18n();
 
   return (
     <SidebarMenu>
@@ -81,13 +83,13 @@ export function NavUser({ user }: { user: SidebarUser }) {
             <DropdownMenuItem asChild>
               <Link href='/set-password'>
                 <KeyRoundIcon />
-                Change password
+                {t.nav.changePassword}
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={() => signOut()}>
               <LogOutIcon />
-              Log out
+              {t.nav.logOut}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

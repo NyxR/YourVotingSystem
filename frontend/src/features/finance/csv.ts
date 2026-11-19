@@ -1,9 +1,6 @@
 import { centsToDecimal } from '@/lib/money';
-import {
-  PAYMENT_METHOD_LABELS,
-  TRANSACTION_TYPE_LABELS,
-  type TransactionRow,
-} from './schemas';
+import type { Messages } from '@/i18n/messages/en';
+import type { TransactionRow } from './schemas';
 
 function escapeCell(value: string): string {
   // Neutralise spreadsheet formula injection, then quote if needed.
@@ -11,33 +8,38 @@ function escapeCell(value: string): string {
   return /[",\n\r]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
 }
 
-export function transactionsToCsv(rows: TransactionRow[]): string {
+/**
+ * CSV with headers and labels in the current language. Amounts stay as plain
+ * "1234.50" numbers so spreadsheets in any locale can parse them.
+ */
+export function transactionsToCsv(rows: TransactionRow[], t: Messages): string {
+  const c = t.csv;
   const header = [
-    'Date',
-    'Type',
-    'Description',
-    'Category',
-    'Payment method',
-    'Reference',
-    'Amount (CAD)',
-    'Signed amount (CAD)',
-    'Has receipt',
-    'Recorded by',
-    'Recorded at',
-    'Last edited by',
-    'Last edited at',
+    c.date,
+    c.type,
+    c.description,
+    c.category,
+    c.paymentMethod,
+    c.reference,
+    c.amount,
+    c.signedAmount,
+    c.hasReceipt,
+    c.recordedBy,
+    c.recordedAt,
+    c.lastEditedBy,
+    c.lastEditedAt,
   ];
   const lines = rows.map((r) =>
     [
       r.date,
-      TRANSACTION_TYPE_LABELS[r.type],
+      t.types[r.type],
       r.description,
-      r.categoryName ?? 'Uncategorized',
-      PAYMENT_METHOD_LABELS[r.paymentMethod],
+      r.categoryName ?? t.common.uncategorized,
+      t.paymentMethods[r.paymentMethod],
       r.reference ?? '',
       centsToDecimal(r.amountCents),
       (r.type === 'EXPENSE' ? '-' : '') + centsToDecimal(r.amountCents),
-      r.hasReceipt ? 'Yes' : 'No',
+      r.hasReceipt ? c.yes : c.no,
       r.createdByName ?? '',
       r.createdAt,
       r.editedAt ? (r.updatedByName ?? '') : '',
@@ -46,7 +48,7 @@ export function transactionsToCsv(rows: TransactionRow[]): string {
       .map((v) => escapeCell(String(v)))
       .join(','),
   );
-  return [header.join(','), ...lines].join('\r\n');
+  return [header.map(escapeCell).join(','), ...lines].join('\r\n');
 }
 
 export function downloadCsv(filename: string, csv: string) {

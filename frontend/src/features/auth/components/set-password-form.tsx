@@ -11,8 +11,10 @@ import {
 } from '@/components/ui/field';
 import { setPassword, type AuthFormState } from '../actions/auth.actions';
 import { FormAlert } from './auth-shell';
+import { useI18n } from '@/i18n/client';
 
 export function SetPasswordForm() {
+  const { t } = useI18n();
   const [state, action, pending] = useActionState<AuthFormState, FormData>(
     setPassword,
     {},
@@ -23,7 +25,7 @@ export function SetPasswordForm() {
       <FieldGroup>
         {state.error && <FormAlert tone='error'>{state.error}</FormAlert>}
         <Field>
-          <FieldLabel htmlFor='password'>New password</FieldLabel>
+          <FieldLabel htmlFor='password'>{t.auth.newPassword}</FieldLabel>
           <Input
             id='password'
             name='password'
@@ -33,10 +35,10 @@ export function SetPasswordForm() {
             required
             autoFocus
           />
-          <FieldDescription>At least 8 characters.</FieldDescription>
+          <FieldDescription>{t.auth.passwordHint}</FieldDescription>
         </Field>
         <Field>
-          <FieldLabel htmlFor='confirm'>Confirm password</FieldLabel>
+          <FieldLabel htmlFor='confirm'>{t.auth.confirmPassword}</FieldLabel>
           <Input
             id='confirm'
             name='confirm'
@@ -47,7 +49,7 @@ export function SetPasswordForm() {
           />
         </Field>
         <Button type='submit' className='w-full' disabled={pending}>
-          {pending ? 'Saving…' : 'Save password'}
+          {pending ? t.common.saving : t.auth.savePassword}
         </Button>
       </FieldGroup>
     </form>

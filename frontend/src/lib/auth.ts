@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation';
 import prisma from '@/lib/prisma';
 import { createSessionClient } from '@/lib/supabase/server';
 import { normalizeRole, type Role } from '@/lib/roles';
+import { getI18n } from '@/i18n/server';
+import type { Messages } from '@/i18n/messages/en';
 
 export type CurrentUser = {
   id: string;
@@ -88,17 +90,22 @@ export async function requirePageAccess(
   return user;
 }
 
-export class AuthError extends Error {}
+type ErrorKey = keyof Messages['errors'];
+
+/** Auth failure; `key` is translated by runAction / the caller. */
+export class AuthError extends Error {
+  constructor(public readonly key: ErrorKey) {
+    super(key);
+  }
+}
 
 /** For server actions: throws AuthError unless the user passes `check`. */
 export async function authorize(
   check: (u: CurrentUser) => boolean = () => true,
 ): Promise<CurrentUser> {
   const user = await getCurrentUser();
-  if (!user) throw new AuthError('You are not signed in.');
-  if (!check(user)) {
-    throw new AuthError('You do not have permission to do this.');
-  }
+  if (!user) throw new AuthError('notSignedIn');
+  if (!check(user)) throw new AuthError('forbidden');
   return user;
 }
 
@@ -106,18 +113,22 @@ export type ActionResult =
   | { success: true }
   | { success: false; message: string };
 
-/** Runs a server-action body, turning thrown errors into a result object. */
+/**
+ * Runs a server-action body, turning thrown errors into a result object with
+ * a message in the requester's language. `fallback` names the generic error.
+ */
 export async function runAction(
   fn: () => Promise<ActionResult | void>,
-  fallbackMessage: string,
+  fallback: ErrorKey,
 ): Promise<ActionResult> {
   try {
     return (await fn()) ?? { success: true };
   } catch (error) {
+    const { t } = await getI18n();
     if (error instanceof AuthError) {
-      return { success: false, message: error.message };
+      return { success: false, message: t.errors[error.key] };
     }
-    console.error(fallbackMessage, error);
-    return { success: false, message: fallbackMessage };
+    console.error(fallback, error);
+    return { success: false, message: t.errors[fallback] };
   }
 }

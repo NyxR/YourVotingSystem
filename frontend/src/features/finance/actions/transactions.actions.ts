@@ -6,6 +6,8 @@ import { authorize, can, runAction, type ActionResult } from '@/lib/auth';
 import { createAdminClient, RECEIPTS_BUCKET } from '@/lib/supabase/admin';
 import { parseAmountToCents } from '@/lib/money';
 import { isoToDate } from '@/lib/dates';
+import { getI18n } from '@/i18n/server';
+import { translateValidation } from '@/i18n/validation';
 import {
   NO_CATEGORY,
   RECEIPT_MIME_TYPES,
@@ -30,12 +32,16 @@ const FORM_FIELDS = [
 export async function saveTransaction(formData: FormData): Promise<ActionResult> {
   return runAction(async () => {
     const user = await authorize(can.editFinance);
+    const { t } = await getI18n();
 
     const parsed = transactionFormSchema.safeParse(
       Object.fromEntries(FORM_FIELDS.map((k) => [k, formData.get(k) ?? ''])),
     );
     if (!parsed.success) {
-      return { success: false, message: parsed.error.issues[0].message };
+      return {
+        success: false,
+        message: translateValidation(t, parsed.error.issues[0]?.message),
+      };
     }
     const values = parsed.data;
 
@@ -50,7 +56,7 @@ export async function saveTransaction(formData: FormData): Promise<ActionResult>
       if (!category || category.type !== values.type) {
         return {
           success: false,
-          message: 'Pick a category that matches the transaction type.',
+          message: t.errors.categoryMismatch,
         };
       }
     }
@@ -60,14 +66,14 @@ export async function saveTransaction(formData: FormData): Promise<ActionResult>
       ? await prisma.transaction.findUnique({ where: { id } })
       : null;
     if (id && !existing) {
-      return { success: false, message: 'This transaction no longer exists.' };
+      return { success: false, message: t.errors.transactionGone };
     }
 
     const receipt = formData.get('receipt');
     const newFile = receipt instanceof File && receipt.size > 0 ? receipt : null;
     if (newFile) {
       const problem = validateReceipt(newFile);
-      if (problem) return { success: false, message: problem };
+      if (problem) return { success: false, message: t.validation[problem] };
     }
 
     const storage = createAdminClient().storage.from(RECEIPTS_BUCKET);
@@ -82,7 +88,7 @@ export async function saveTransaction(formData: FormData): Promise<ActionResult>
       });
       if (error) {
         console.error('Receipt upload failed', error);
-        return { success: false, message: 'Could not upload the receipt.' };
+        return { success: false, message: t.errors.receiptUpload };
       }
       uploaded = path;
       staleReceipt = receiptPath;
@@ -121,7 +127,7 @@ export async function saveTransaction(formData: FormData): Promise<ActionResult>
 
     if (staleReceipt) await storage.remove([staleReceipt]);
     revalidatePath('/main', 'layout');
-  }, 'Failed to save the transaction.');
+  }, 'transactionSave');
 }
 
 export async function deleteTransaction(id: string): Promise<ActionResult> {
@@ -134,5 +140,5 @@ export async function deleteTransaction(id: string): Promise<ActionResult> {
         .remove([deleted.receiptPath]);
     }
     revalidatePath('/main', 'layout');
-  }, 'Failed to delete the transaction.');
+  }, 'transactionDelete');
 }

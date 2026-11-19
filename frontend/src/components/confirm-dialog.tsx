@@ -11,6 +11,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { useI18n } from '@/i18n/client';
 
 /**
  * Controlled confirmation dialog for destructive actions. `onConfirm` may be
@@ -22,7 +23,7 @@ export function ConfirmDialog({
   onOpenChange,
   title,
   description,
-  confirmLabel = 'Delete',
+  confirmLabel,
   onConfirm,
 }: {
   open: boolean;
@@ -32,6 +33,7 @@ export function ConfirmDialog({
   confirmLabel?: string;
   onConfirm: () => Promise<boolean | void> | boolean | void;
 }) {
+  const { t } = useI18n();
   const [busy, setBusy] = useState(false);
 
   const handleConfirm = async () => {
@@ -52,9 +54,9 @@ export function ConfirmDialog({
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={busy}>{t.common.cancel}</AlertDialogCancel>
           <Button variant='destructive' onClick={handleConfirm} disabled={busy}>
-            {busy ? 'Working…' : confirmLabel}
+            {busy ? t.common.working : (confirmLabel ?? t.common.delete)}
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>

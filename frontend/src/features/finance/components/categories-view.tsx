@@ -28,6 +28,9 @@ import { Input } from '@/components/ui/input';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { TYPE_TOGGLE_CLASS } from './type-toggle-styles';
 import { ConfirmDialog } from '@/components/confirm-dialog';
+import { fmt } from '@/i18n/config';
+import { useI18n } from '@/i18n/client';
+import { tErrors } from '@/i18n/validation';
 import {
   createCategory,
   deleteCategory,
@@ -50,18 +53,19 @@ export function CategoriesView({
   const [formState, setFormState] = useState<
     { mode: 'create'; type: TransactionType } | { mode: 'rename'; category: CategoryRow } | null
   >(null);
+  const { t } = useI18n();
   const [deleting, setDeleting] = useState<CategoryRow | null>(null);
 
   const sections: { type: TransactionType; title: string; description: string }[] = [
     {
       type: 'INCOME',
-      title: 'Income categories',
-      description: 'Where money comes from: donations, dues, grants…',
+      title: t.categories.incomeTitle,
+      description: t.categories.incomeDescription,
     },
     {
       type: 'EXPENSE',
-      title: 'Expense categories',
-      description: 'Where money goes: rent, supplies, salaries…',
+      title: t.categories.expenseTitle,
+      description: t.categories.expenseDescription,
     },
   ];
 
@@ -81,7 +85,7 @@ export function CategoriesView({
                     variant='outline'
                     onClick={() => setFormState({ mode: 'create', type: s.type })}
                   >
-                    <PlusIcon /> Add
+                    <PlusIcon /> {t.common.add}
                   </Button>
                 </CardAction>
               )}
@@ -89,7 +93,7 @@ export function CategoriesView({
             <CardContent>
               {list.length === 0 ? (
                 <p className='rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground'>
-                  No categories yet.
+                  {t.categories.empty}
                 </p>
               ) : (
                 <ul className='divide-y rounded-md border'>
@@ -97,7 +101,7 @@ export function CategoriesView({
                     <li key={c.id} className='flex items-center gap-2 px-3 py-2'>
                       <span className='flex-1 truncate font-medium'>{c.name}</span>
                       <span className='text-sm text-muted-foreground tabular-nums'>
-                        {c.transactionCount} transaction{c.transactionCount === 1 ? '' : 's'}
+                        {fmt(t.categories.transactionCount, { count: c.transactionCount })}
                       </span>
                       {canEdit && (
                         <>
@@ -108,7 +112,7 @@ export function CategoriesView({
                             onClick={() => setFormState({ mode: 'rename', category: c })}
                           >
                             <PencilIcon />
-                            <span className='sr-only'>Rename {c.name}</span>
+                            <span className='sr-only'>{fmt(t.categories.rename, { name: c.name })}</span>
                           </Button>
                           <Button
                             variant='ghost'
@@ -117,7 +121,7 @@ export function CategoriesView({
                             onClick={() => setDeleting(c)}
                           >
                             <Trash2Icon />
-                            <span className='sr-only'>Delete {c.name}</span>
+                            <span className='sr-only'>{fmt(t.categories.deleteName, { name: c.name })}</span>
                           </Button>
                         </>
                       )}
@@ -136,16 +140,16 @@ export function CategoriesView({
           <ConfirmDialog
             open={!!deleting}
             onOpenChange={(o) => !o && setDeleting(null)}
-            title={`Delete “${deleting?.name}”?`}
+            title={fmt(t.categories.deleteTitle, { name: deleting?.name ?? '' })}
             description={
               deleting?.transactionCount
-                ? `${deleting.transactionCount} transaction(s) use this category. They will be kept but become uncategorized.`
-                : 'No transactions use this category.'
+                ? fmt(t.categories.deleteUsed, { count: deleting.transactionCount })
+                : t.categories.deleteUnused
             }
             onConfirm={async () => {
               if (!deleting) return;
               const result = await deleteCategory(deleting.id);
-              if (result.success) toast.success('Category deleted');
+              if (result.success) toast.success(t.categories.deleted);
               else {
                 toast.error(result.message);
                 return false;
@@ -179,6 +183,7 @@ function CategoryFormDialog({
     );
   }, [state, form]);
 
+  const { t } = useI18n();
   const isRename = state?.mode === 'rename';
 
   const onSubmit = async (values: CategoryFormValues) => {
@@ -187,7 +192,7 @@ function CategoryFormDialog({
         ? await renameCategory(state.category.id, values.name)
         : await createCategory(values);
     if (result.success) {
-      toast.success(isRename ? 'Category renamed' : 'Category added');
+      toast.success(isRename ? t.categories.renamed : t.categories.added);
       onClose();
     } else {
       form.setError('name', { message: result.message });
@@ -198,11 +203,11 @@ function CategoryFormDialog({
     <Dialog open={!!state} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className='sm:max-w-sm'>
         <DialogHeader>
-          <DialogTitle>{isRename ? 'Rename category' : 'New category'}</DialogTitle>
+          <DialogTitle>{isRename ? t.categories.renameTitle : t.categories.newTitle}</DialogTitle>
           <DialogDescription>
             {isRename
-              ? 'Existing transactions keep this category under its new name.'
-              : 'Categories help you see where money comes from and goes.'}
+              ? t.categories.renameDescription
+              : t.categories.newDescription}
           </DialogDescription>
         </DialogHeader>
         <form id='category-form' onSubmit={form.handleSubmit(onSubmit)}>
@@ -213,7 +218,7 @@ function CategoryFormDialog({
                 name='type'
                 render={({ field }) => (
                   <Field>
-                    <FieldLabel>Type</FieldLabel>
+                    <FieldLabel>{t.categories.type}</FieldLabel>
                     <ToggleGroup
                       type='single'
                       variant='outline'
@@ -222,10 +227,10 @@ function CategoryFormDialog({
                       onValueChange={(v) => v && field.onChange(v)}
                     >
                       <ToggleGroupItem value='INCOME' className={TYPE_TOGGLE_CLASS.INCOME}>
-                        Income
+                        {t.types.INCOME}
                       </ToggleGroupItem>
                       <ToggleGroupItem value='EXPENSE' className={TYPE_TOGGLE_CLASS.EXPENSE}>
-                        Expense
+                        {t.types.EXPENSE}
                       </ToggleGroupItem>
                     </ToggleGroup>
                   </Field>
@@ -237,7 +242,7 @@ function CategoryFormDialog({
               name='name'
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor='category-name'>Name</FieldLabel>
+                  <FieldLabel htmlFor='category-name'>{t.categories.name}</FieldLabel>
                   <Input
                     {...field}
                     id='category-name'
@@ -245,7 +250,7 @@ function CategoryFormDialog({
                     autoFocus
                     aria-invalid={fieldState.invalid}
                   />
-                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  {fieldState.invalid && <FieldError errors={tErrors(t, fieldState.error)} />}
                 </Field>
               )}
             />
@@ -253,10 +258,14 @@ function CategoryFormDialog({
         </form>
         <DialogFooter>
           <DialogClose asChild>
-            <Button variant='outline'>Cancel</Button>
+            <Button variant='outline'>{t.common.cancel}</Button>
           </DialogClose>
           <Button type='submit' form='category-form' disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? 'Saving…' : isRename ? 'Save' : 'Add category'}
+            {form.formState.isSubmitting
+              ? t.common.saving
+              : isRename
+                ? t.common.save
+                : t.categories.addCategory}
           </Button>
         </DialogFooter>
       </DialogContent>

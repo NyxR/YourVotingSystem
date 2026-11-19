@@ -1,26 +1,51 @@
-const cad = new Intl.NumberFormat('en-CA', {
-  style: 'currency',
-  currency: 'CAD',
-});
-const cadCompact = new Intl.NumberFormat('en-CA', {
-  style: 'currency',
-  currency: 'CAD',
-  notation: 'compact',
-  maximumFractionDigits: 1,
-});
+// Money is stored as integer CAD cents. `intl` is a BCP-47 tag such as
+// 'en-CA' or 'fr-CA' (see INTL_LOCALE in @/i18n/config).
 
-export const formatCAD = (cents: number) => cad.format(cents / 100);
-export const formatCADCompact = (cents: number) =>
-  cadCompact.format(cents / 100);
+const formatters = new Map<string, Intl.NumberFormat>();
+
+function formatter(intl: string, compact: boolean) {
+  const key = `${intl}|${compact}`;
+  let f = formatters.get(key);
+  if (!f) {
+    f = new Intl.NumberFormat(intl, {
+      style: 'currency',
+      currency: 'CAD',
+      ...(compact ? { notation: 'compact', maximumFractionDigits: 1 } : {}),
+    });
+    formatters.set(key, f);
+  }
+  return f;
+}
+
+/** 12550 -> "$125.50" (en-CA) / "125,50 $" (fr-CA). */
+export const formatCAD = (cents: number, intl = 'en-CA') =>
+  formatter(intl, false).format(cents / 100);
+
+/** 1250000 -> "$12.5K" / "12,5 k$". */
+export const formatCADCompact = (cents: number, intl = 'en-CA') =>
+  formatter(intl, true).format(cents / 100);
 
 /** Plain decimal string for inputs and CSV, e.g. 12550 -> "125.50". */
 export const centsToDecimal = (cents: number) => (cents / 100).toFixed(2);
 
+/** Like centsToDecimal, with a decimal comma for French: "125,50". */
+export const centsToInput = (cents: number, intl = 'en-CA') => {
+  const s = centsToDecimal(cents);
+  return intl.startsWith('fr') ? s.replace('.', ',') : s;
+};
+
 const MAX_CENTS = 2_000_000_000; // fits a Postgres INTEGER with margin
 
-/** "1,234.5" / "$1234.50" -> 123450. Returns null when not a valid amount. */
+/**
+ * Parses what a person typed into cents, in English or French style:
+ * "1,234.50", "$1234.5", "1 234,50", "12,50 $" -> 123450 / 1250.
+ * A comma followed by exactly one or two final digits is a decimal comma;
+ * otherwise commas are thousands separators. Returns null when invalid.
+ */
 export function parseAmountToCents(input: string): number | null {
-  const cleaned = input.replace(/[\s,$]/g, '');
+  let cleaned = input.replace(/[\s  $]/g, '');
+  if (/^\d+,\d{1,2}$/.test(cleaned)) cleaned = cleaned.replace(',', '.');
+  cleaned = cleaned.replace(/,/g, '');
   if (!/^\d+(\.\d{1,2})?$/.test(cleaned)) return null;
   const [whole, fraction = ''] = cleaned.split('.');
   const cents = Number(whole) * 100 + Number((fraction + '00').slice(0, 2));

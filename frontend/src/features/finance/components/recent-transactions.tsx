@@ -19,19 +19,22 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { formatDay } from '@/lib/dates';
-import { PAYMENT_METHOD_LABELS, type TransactionRow } from '../schemas';
+import { getI18n } from '@/i18n/server';
+import type { TransactionRow } from '../schemas';
 import { Amount } from './amount';
 
-export function RecentTransactions({ transactions }: { transactions: TransactionRow[] }) {
+export async function RecentTransactions({ transactions }: { transactions: TransactionRow[] }) {
+  const { t, intl } = await getI18n();
+
   return (
     <Card className='@container/recent'>
       <CardHeader>
-        <CardTitle>Recent transactions</CardTitle>
-        <CardDescription>The latest money in and out</CardDescription>
+        <CardTitle>{t.recent.title}</CardTitle>
+        <CardDescription>{t.recent.description}</CardDescription>
         <CardAction>
           <Button variant='ghost' size='sm' asChild>
             <Link href='/main/transactions'>
-              View all <ArrowRightIcon />
+              {t.recent.viewAll} <ArrowRightIcon />
             </Link>
           </Button>
         </CardAction>
@@ -39,45 +42,55 @@ export function RecentTransactions({ transactions }: { transactions: Transaction
       <CardContent>
         {transactions.length === 0 ? (
           <p className='rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground'>
-            Nothing recorded yet.
+            {t.recent.empty}
           </p>
         ) : (
           <div className='overflow-hidden rounded-lg border'>
             <Table>
               <TableHeader className='bg-muted'>
                 <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead className='hidden @xl/recent:table-cell'>Category</TableHead>
-                  <TableHead className='hidden @3xl/recent:table-cell'>Method</TableHead>
-                  <TableHead className='hidden @4xl/recent:table-cell'>Recorded by</TableHead>
-                  <TableHead className='text-right'>Amount</TableHead>
+                  <TableHead>{t.transactions.colDate}</TableHead>
+                  <TableHead>{t.transactions.colDescription}</TableHead>
+                  <TableHead className='hidden @xl/recent:table-cell'>
+                    {t.transactions.colCategory}
+                  </TableHead>
+                  <TableHead className='hidden @3xl/recent:table-cell'>
+                    {t.transactions.colMethod}
+                  </TableHead>
+                  <TableHead className='hidden @4xl/recent:table-cell'>
+                    {t.transactions.colRecordedBy}
+                  </TableHead>
+                  <TableHead className='text-right'>{t.transactions.colAmount}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {transactions.map((t) => (
-                  <TableRow key={t.id}>
-                    <TableCell className='whitespace-nowrap'>{formatDay(t.date)}</TableCell>
+                {transactions.map((tx) => (
+                  <TableRow key={tx.id}>
+                    <TableCell className='whitespace-nowrap'>
+                      {formatDay(tx.date, {}, intl)}
+                    </TableCell>
                     <TableCell className='max-w-[20rem]'>
-                      <span className='block truncate font-medium'>{t.description}</span>
+                      <span className='block truncate font-medium'>{tx.description}</span>
                     </TableCell>
                     <TableCell className='hidden @xl/recent:table-cell'>
-                      {t.categoryName ? (
+                      {tx.categoryName ? (
                         <Badge variant='outline' className='text-muted-foreground'>
-                          {t.categoryName}
+                          {tx.categoryName}
                         </Badge>
                       ) : (
-                        <span className='text-sm text-muted-foreground'>Uncategorized</span>
+                        <span className='text-sm text-muted-foreground'>
+                          {t.common.uncategorized}
+                        </span>
                       )}
                     </TableCell>
                     <TableCell className='hidden whitespace-nowrap text-muted-foreground @3xl/recent:table-cell'>
-                      {PAYMENT_METHOD_LABELS[t.paymentMethod]}
+                      {t.paymentMethods[tx.paymentMethod]}
                     </TableCell>
                     <TableCell className='hidden whitespace-nowrap text-muted-foreground @4xl/recent:table-cell'>
-                      {t.createdByName ?? 'Removed user'}
+                      {tx.createdByName ?? t.common.removedUser}
                     </TableCell>
                     <TableCell className='text-right'>
-                      <Amount cents={t.amountCents} type={t.type} />
+                      <Amount cents={tx.amountCents} type={tx.type} />
                     </TableCell>
                   </TableRow>
                 ))}

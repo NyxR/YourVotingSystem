@@ -11,6 +11,7 @@ import {
 } from '@tanstack/react-table';
 import { toast } from 'sonner';
 import { format, formatDistanceToNow } from 'date-fns';
+import { enCA, frCA } from 'date-fns/locale';
 import {
   DownloadIcon,
   EllipsisVerticalIcon,
@@ -42,11 +43,12 @@ import { DataTable, SortableHeader } from '@/components/data-table/data-table';
 import { formatCAD } from '@/lib/money';
 import { formatDay, todayISO } from '@/lib/dates';
 import { cn } from '@/lib/utils';
+import { fmt } from '@/i18n/config';
+import { useI18n } from '@/i18n/client';
 import { deleteTransaction } from '../actions/transactions.actions';
 import { downloadCsv, transactionsToCsv } from '../csv';
 import {
   NO_CATEGORY,
-  PAYMENT_METHOD_LABELS,
   type CategoryOption,
   type TransactionRow,
   type TransactionType,
@@ -87,6 +89,9 @@ export function TransactionsView({
   /** Initial From/To filter: first to last day of the current month. */
   defaultRange: DateRange;
 }) {
+  const { t, intl, locale } = useI18n();
+  const dateLocale = locale === 'fr' ? frCA : enCA;
+  const money = (cents: number) => formatCAD(cents, intl);
   const [filters, setFilters] = useState<Filters>(() => defaultFilters(defaultRange));
   const [sorting, setSorting] = useState<SortingState>([{ id: 'date', desc: true }]);
   const [formOpen, setFormOpen] = useState(false);
@@ -99,19 +104,19 @@ export function TransactionsView({
 
   const filtered = useMemo(() => {
     const q = filters.search.trim().toLowerCase();
-    return transactions.filter((t) => {
-      if (filters.type !== ALL && t.type !== filters.type) return false;
+    return transactions.filter((tx) => {
+      if (filters.type !== ALL && tx.type !== filters.type) return false;
       if (
         filters.categories.length > 0 &&
-        !filters.categories.includes(t.categoryId ?? NO_CATEGORY)
+        !filters.categories.includes(tx.categoryId ?? NO_CATEGORY)
       ) {
         return false;
       }
-      if (filters.from && t.date < filters.from) return false;
-      if (filters.to && t.date > filters.to) return false;
+      if (filters.from && tx.date < filters.from) return false;
+      if (filters.to && tx.date > filters.to) return false;
       if (q) {
         const haystack =
-          `${t.description} ${t.reference ?? ''} ${t.categoryName ?? ''} ${t.createdByName ?? ''} ${t.updatedByName ?? ''}`.toLowerCase();
+          `${tx.description} ${tx.reference ?? ''} ${tx.categoryName ?? ''} ${tx.createdByName ?? ''} ${tx.updatedByName ?? ''}`.toLowerCase();
         if (!haystack.includes(q)) return false;
       }
       return true;
@@ -121,9 +126,9 @@ export function TransactionsView({
   const totals = useMemo(() => {
     let income = 0;
     let expense = 0;
-    for (const t of filtered) {
-      if (t.type === 'INCOME') income += t.amountCents;
-      else expense += t.amountCents;
+    for (const tx of filtered) {
+      if (tx.type === 'INCOME') income += tx.amountCents;
+      else expense += tx.amountCents;
     }
     return { income, expense, net: income - expense };
   }, [filtered]);
@@ -132,14 +137,14 @@ export function TransactionsView({
     () => [
       {
         accessorKey: 'date',
-        header: ({ column }) => <SortableHeader column={column} title='Date' />,
+        header: ({ column }) => <SortableHeader column={column} title={t.transactions.colDate} />,
         cell: ({ row }) => (
-          <span className='whitespace-nowrap'>{formatDay(row.original.date)}</span>
+          <span className='whitespace-nowrap'>{formatDay(row.original.date, {}, intl)}</span>
         ),
       },
       {
         accessorKey: 'description',
-        header: 'Description',
+        header: t.transactions.colDescription,
         cell: ({ row }) => (
           <div className='flex max-w-[22rem] flex-col'>
             <span className='truncate font-medium'>{row.original.description}</span>
@@ -154,44 +159,57 @@ export function TransactionsView({
       {
         id: 'category',
         accessorFn: (r) => r.categoryName ?? '',
-        header: ({ column }) => <SortableHeader column={column} title='Category' />,
+        header: ({ column }) => <SortableHeader column={column} title={t.transactions.colCategory} />,
         cell: ({ row }) =>
           row.original.categoryName ? (
             <Badge variant='outline' className='text-muted-foreground'>
               {row.original.categoryName}
             </Badge>
           ) : (
-            <span className='text-sm text-muted-foreground'>Uncategorized</span>
+            <span className='text-sm text-muted-foreground'>{t.common.uncategorized}</span>
           ),
       },
       {
         accessorKey: 'paymentMethod',
-        header: 'Method',
+        header: t.transactions.colMethod,
         cell: ({ row }) => (
           <span className='whitespace-nowrap text-muted-foreground'>
-            {PAYMENT_METHOD_LABELS[row.original.paymentMethod]}
+            {t.paymentMethods[row.original.paymentMethod]}
           </span>
         ),
       },
       {
         id: 'recordedBy',
         accessorFn: (r) => r.createdByName ?? '',
-        header: ({ column }) => <SortableHeader column={column} title='Recorded by' />,
+        header: ({ column }) => <SortableHeader column={column} title={t.transactions.colRecordedBy} />,
         cell: ({ row }) => {
-          const t = row.original;
-          const created = `Created by ${t.createdByName ?? 'a removed user'} on ${format(new Date(t.createdAt), 'PPp')}`;
-          const edited = t.editedAt
-            ? `Last edited by ${t.updatedByName ?? 'a removed user'} on ${format(new Date(t.editedAt), 'PPp')}`
+          const tx = row.original;
+          const when = (iso: string) => format(new Date(iso), 'PPp', { locale: dateLocale });
+          const removed = t.transactions.removedUserLower;
+          const created = fmt(t.transactions.createdByOn, {
+            name: tx.createdByName ?? removed,
+            date: when(tx.createdAt),
+          });
+          const edited = tx.editedAt
+            ? fmt(t.transactions.editedByOn, {
+                name: tx.updatedByName ?? removed,
+                date: when(tx.editedAt),
+              })
             : null;
           return (
             <div className='flex flex-col' title={edited ? `${created}\n${edited}` : created}>
-              <span className={cn('whitespace-nowrap', !t.createdByName && 'text-muted-foreground')}>
-                {t.createdByName ?? 'Removed user'}
+              <span className={cn('whitespace-nowrap', !tx.createdByName && 'text-muted-foreground')}>
+                {tx.createdByName ?? t.common.removedUser}
               </span>
-              {t.editedAt && (
+              {tx.editedAt && (
                 <span className='text-xs whitespace-nowrap text-muted-foreground'>
-                  Edited by {t.updatedByName ?? 'removed user'} ·{' '}
-                  {formatDistanceToNow(new Date(t.editedAt), { addSuffix: true })}
+                  {fmt(t.transactions.editedBy, {
+                    name: tx.updatedByName ?? removed,
+                    when: formatDistanceToNow(new Date(tx.editedAt), {
+                      addSuffix: true,
+                      locale: dateLocale,
+                    }),
+                  })}
                 </span>
               )}
             </div>
@@ -202,7 +220,7 @@ export function TransactionsView({
         id: 'amount',
         accessorFn: (r) => (r.type === 'INCOME' ? r.amountCents : -r.amountCents),
         header: ({ column }) => (
-          <SortableHeader column={column} title='Amount' align='right' />
+          <SortableHeader column={column} title={t.transactions.colAmount} align='right' />
         ),
         meta: { align: 'right' },
         cell: ({ row }) => (
@@ -211,7 +229,7 @@ export function TransactionsView({
       },
       {
         id: 'receipt',
-        header: () => <span className='sr-only'>Receipt</span>,
+        header: () => <span className='sr-only'>{t.transactions.colReceipt}</span>,
         cell: ({ row }) =>
           row.original.hasReceipt ? (
             <Button variant='ghost' size='icon' className='size-8' asChild>
@@ -219,10 +237,10 @@ export function TransactionsView({
                 href={`/main/transactions/${row.original.id}/receipt`}
                 target='_blank'
                 rel='noreferrer'
-                title='Open receipt'
+                title={t.transactions.openReceipt}
               >
                 <PaperclipIcon />
-                <span className='sr-only'>Open receipt</span>
+                <span className='sr-only'>{t.transactions.openReceipt}</span>
               </a>
             </Button>
           ) : null,
@@ -240,7 +258,7 @@ export function TransactionsView({
                       className='size-8 text-muted-foreground data-[state=open]:bg-muted'
                     >
                       <EllipsisVerticalIcon />
-                      <span className='sr-only'>Open menu</span>
+                      <span className='sr-only'>{t.common.openMenu}</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align='end' className='w-36'>
@@ -250,14 +268,14 @@ export function TransactionsView({
                         setFormOpen(true);
                       }}
                     >
-                      Edit
+                      {t.common.edit}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       variant='destructive'
                       onSelect={() => setDeleting(row.original)}
                     >
-                      Delete
+                      {t.common.delete}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -266,7 +284,7 @@ export function TransactionsView({
           ]
         : []),
     ],
-    [canEdit],
+    [canEdit, t, intl, dateLocale],
   );
 
   const table = useReactTable({
@@ -285,10 +303,10 @@ export function TransactionsView({
   const exportCsv = () => {
     const rows = table.getSortedRowModel().rows.map((r) => r.original);
     if (!rows.length) {
-      toast.info('Nothing to export with the current filters.');
+      toast.info(t.transactions.nothingToExport);
       return;
     }
-    downloadCsv(`transactions-${todayISO()}.csv`, transactionsToCsv(rows));
+    downloadCsv(`${t.csv.filename}-${todayISO()}.csv`, transactionsToCsv(rows, t));
   };
 
   // Changing the type drops selected categories that belong to the other type.
@@ -312,21 +330,21 @@ export function TransactionsView({
           <div className='relative min-w-48 flex-1'>
             <SearchIcon className='pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground' />
             <Input
-              placeholder='Search description, reference, category, person…'
+              placeholder={t.transactions.searchPlaceholder}
               value={filters.search}
               onChange={(e) => setFilter('search', e.target.value)}
               className='pl-8'
-              aria-label='Search transactions'
+              aria-label={t.transactions.searchLabel}
             />
           </div>
           <Select value={filters.type} onValueChange={changeType}>
-            <SelectTrigger className='w-36' aria-label='Type'>
+            <SelectTrigger className='w-36' aria-label={t.transactions.type}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={ALL}>All types</SelectItem>
-              <SelectItem value='INCOME'>Income</SelectItem>
-              <SelectItem value='EXPENSE'>Expenses</SelectItem>
+              <SelectItem value={ALL}>{t.transactions.allTypes}</SelectItem>
+              <SelectItem value='INCOME'>{t.transactions.incomeFilter}</SelectItem>
+              <SelectItem value='EXPENSE'>{t.transactions.expensesFilter}</SelectItem>
             </SelectContent>
           </Select>
           <CategoryFilter
@@ -337,7 +355,7 @@ export function TransactionsView({
           />
           <div className='flex items-center gap-2'>
             <Label htmlFor='tx-from' className='text-sm text-muted-foreground'>
-              From
+              {t.common.from}
             </Label>
             <Input
               id='tx-from'
@@ -348,7 +366,7 @@ export function TransactionsView({
               onChange={(e) => setFilter('from', e.target.value)}
             />
             <Label htmlFor='tx-to' className='text-sm text-muted-foreground'>
-              To
+              {t.common.to}
             </Label>
             <Input
               id='tx-to'
@@ -361,20 +379,28 @@ export function TransactionsView({
           </div>
         </div>
         <div className='flex flex-wrap items-center gap-2'>
-          <SummaryPill label='Income' value={formatCAD(totals.income)} className='text-income-text' />
-          <SummaryPill label='Expenses' value={formatCAD(totals.expense)} className='text-expense-text' />
           <SummaryPill
-            label='Net'
-            value={(totals.net < 0 ? '−' : '') + formatCAD(Math.abs(totals.net))}
+            label={t.transactions.incomeFilter}
+            value={money(totals.income)}
+            className='text-income-text'
+          />
+          <SummaryPill
+            label={t.transactions.expensesFilter}
+            value={money(totals.expense)}
+            className='text-expense-text'
+          />
+          <SummaryPill
+            label={t.transactions.net}
+            value={(totals.net < 0 ? '−' : '') + money(Math.abs(totals.net))}
           />
           <div className='ml-auto flex items-center gap-2'>
             {isFiltered && (
               <Button variant='ghost' size='sm' onClick={() => setFilters(defaultFilters(defaultRange))}>
-                <FilterXIcon /> Reset filters
+                <FilterXIcon /> {t.transactions.resetFilters}
               </Button>
             )}
             <Button variant='outline' size='sm' onClick={exportCsv}>
-              <DownloadIcon /> Export CSV
+              <DownloadIcon /> {t.transactions.exportCsv}
             </Button>
             {canEdit && (
               <Button
@@ -384,7 +410,7 @@ export function TransactionsView({
                   setFormOpen(true);
                 }}
               >
-                <PlusIcon /> New transaction
+                <PlusIcon /> {t.transactions.newTransaction}
               </Button>
             )}
           </div>
@@ -395,10 +421,10 @@ export function TransactionsView({
         table={table}
         emptyMessage={
           transactions.length
-            ? 'No transactions match these filters.'
+            ? t.transactions.noMatch
             : canEdit
-              ? 'No transactions yet. Add the first one with "New transaction".'
-              : 'No transactions yet.'
+              ? t.transactions.emptyCanEdit
+              : t.transactions.empty
         }
       />
 
@@ -413,20 +439,25 @@ export function TransactionsView({
           <ConfirmDialog
             open={!!deleting}
             onOpenChange={(o) => !o && setDeleting(null)}
-            title='Delete this transaction?'
+            title={t.transactions.deleteTitle}
             description={
               deleting && (
-                <>
-                  “{deleting.description}” ({formatCAD(deleting.amountCents)} on{' '}
-                  {formatDay(deleting.date)}) will be permanently deleted
-                  {deleting.hasReceipt && ', along with its receipt'}.
-                </>
+                fmt(
+                  deleting.hasReceipt
+                    ? t.transactions.deleteDescriptionReceipt
+                    : t.transactions.deleteDescription,
+                  {
+                    description: deleting.description,
+                    amount: money(deleting.amountCents),
+                    date: formatDay(deleting.date, {}, intl),
+                  },
+                )
               )
             }
             onConfirm={async () => {
               if (!deleting) return;
               const result = await deleteTransaction(deleting.id);
-              if (result.success) toast.success('Transaction deleted');
+              if (result.success) toast.success(t.transactions.deleted);
               else {
                 toast.error(result.message);
                 return false;

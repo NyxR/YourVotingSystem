@@ -5,6 +5,9 @@ import prisma from '@/lib/prisma';
 import { authorize, can, runAction, type ActionResult } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getSiteUrl } from '@/lib/site-url';
+import { getI18n } from '@/i18n/server';
+import { translateValidation } from '@/i18n/validation';
+import type { Messages } from '@/i18n/messages/en';
 import { listAuthUsers } from '../queries';
 import {
   inviteUserSchema,
@@ -12,6 +15,18 @@ import {
   type TInviteUser,
   type TUpdateUser,
 } from '../schemas/user.schema';
+
+/** A failed result with a translated error message. */
+async function fail(key: keyof Messages['errors']): Promise<ActionResult> {
+  const { t } = await getI18n();
+  return { success: false, message: t.errors[key] };
+}
+
+/** A failed result for a schema validation error. */
+async function invalid(message: string | undefined): Promise<ActionResult> {
+  const { t } = await getI18n();
+  return { success: false, message: translateValidation(t, message) };
+}
 
 const setPasswordRedirect = async () =>
   `${await getSiteUrl()}/auth/confirm?next=/set-password`;
@@ -53,7 +68,7 @@ export async function inviteUser(values: TInviteUser): Promise<ActionResult> {
     await authorize(can.manageUsers);
     const parsed = inviteUserSchema.safeParse(values);
     if (!parsed.success) {
-      return { success: false, message: parsed.error.issues[0].message };
+      return invalid(parsed.error.issues[0]?.message);
     }
     const { email, username, role } = parsed.data;
 
@@ -61,7 +76,7 @@ export async function inviteUser(values: TInviteUser): Promise<ActionResult> {
       where: { email: { equals: email, mode: 'insensitive' } },
     });
     if (existing?.authId) {
-      return { success: false, message: 'A user with this email already exists.' };
+      return fail('userExists');
     }
 
     const authId = await sendInvite(email, username);
@@ -80,7 +95,7 @@ export async function inviteUser(values: TInviteUser): Promise<ActionResult> {
       throw e;
     }
     revalidatePath('/main/users');
-  }, 'Failed to invite the user. Check that email sending is configured in Supabase.');
+  }, 'userInvite');
 }
 
 /** Re-sends the invite (never signed in) or a password-reset email. */
@@ -88,7 +103,7 @@ export async function resendAccessEmail(userId: string): Promise<ActionResult> {
   return runAction(async () => {
     await authorize(can.manageUsers);
     const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) return { success: false, message: 'User not found.' };
+    if (!user) return fail('userNotFound');
 
     if (!user.authId) {
       const authId = await sendInvite(user.email, user.username);
@@ -97,7 +112,7 @@ export async function resendAccessEmail(userId: string): Promise<ActionResult> {
       await sendPasswordEmail(user.email);
     }
     revalidatePath('/main/users');
-  }, 'Failed to send the email. Supabase may be rate-limiting; try again in a minute.');
+  }, 'userEmail');
 }
 
 async function countOtherAdmins(excludeId: string) {
@@ -109,30 +124,30 @@ export async function updateUser(userId: string, values: TUpdateUser): Promise<A
     await authorize(can.manageUsers);
     const parsed = updateUserSchema.safeParse(values);
     if (!parsed.success) {
-      return { success: false, message: parsed.error.issues[0].message };
+      return invalid(parsed.error.issues[0]?.message);
     }
     const target = await prisma.user.findUnique({ where: { id: userId } });
-    if (!target) return { success: false, message: 'User not found.' };
+    if (!target) return fail('userNotFound');
 
     if (target.role === 'admin' && parsed.data.role !== 'admin' && (await countOtherAdmins(userId)) === 0) {
-      return { success: false, message: 'There must always be at least one admin.' };
+      return fail('lastAdmin');
     }
 
     await prisma.user.update({ where: { id: userId }, data: parsed.data });
     revalidatePath('/main', 'layout');
-  }, 'Failed to update the user.');
+  }, 'userUpdate');
 }
 
 export async function deleteUser(userId: string): Promise<ActionResult> {
   return runAction(async () => {
     const me = await authorize(can.manageUsers);
     if (me.id === userId) {
-      return { success: false, message: "You can't remove your own account." };
+      return fail('deleteSelf');
     }
     const target = await prisma.user.findUnique({ where: { id: userId } });
-    if (!target) return { success: false, message: 'User not found.' };
+    if (!target) return fail('userNotFound');
     if (target.role === 'admin' && (await countOtherAdmins(userId)) === 0) {
-      return { success: false, message: 'There must always be at least one admin.' };
+      return fail('lastAdmin');
     }
 
     if (target.authId) {
@@ -143,5 +158,5 @@ export async function deleteUser(userId: string): Promise<ActionResult> {
     // Their transactions stay; "recorded by" becomes empty (FK SET NULL).
     await prisma.user.delete({ where: { id: userId } });
     revalidatePath('/main/users');
-  }, 'Failed to remove the user.');
+  }, 'userDelete');
 }

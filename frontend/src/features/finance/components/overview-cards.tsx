@@ -10,69 +10,85 @@ import {
 } from '@/components/ui/card';
 import { formatCAD } from '@/lib/money';
 import { formatDay } from '@/lib/dates';
+import { fmt } from '@/i18n/config';
+import { getI18n } from '@/i18n/server';
 import type { DashboardData } from '../queries';
 
 function percentChange(current: number, previous: number): number | null {
   if (previous === 0) return null;
-  return ((current - previous) / previous) * 100;
+  return (current - previous) / previous;
 }
 
-function ChangeBadge({ change }: { change: number | null }) {
+function ChangeBadge({ change, intl }: { change: number | null; intl: string }) {
   if (change === null) return null;
-  const up = change >= 0;
-  const Icon = up ? TrendingUpIcon : TrendingDownIcon;
+  const Icon = change >= 0 ? TrendingUpIcon : TrendingDownIcon;
+  const text = new Intl.NumberFormat(intl, {
+    style: 'percent',
+    maximumFractionDigits: 0,
+    signDisplay: 'exceptZero',
+  }).format(change);
   return (
     <Badge variant='outline'>
       <Icon />
-      {up ? '+' : ''}
-      {change.toFixed(0)}%
+      {text}
     </Badge>
   );
 }
 
-const signed = (cents: number) => (cents < 0 ? '−' : '') + formatCAD(Math.abs(cents));
+export async function OverviewCards({ data }: { data: DashboardData }) {
+  const { t, intl } = await getI18n();
+  const o = t.overview;
+  const money = (cents: number) => formatCAD(cents, intl);
+  const signed = (cents: number) => (cents < 0 ? '−' : '') + money(Math.abs(cents));
 
-export function OverviewCards({ data }: { data: DashboardData }) {
   const { thisMonth, lastMonth } = data;
   const net = thisMonth.income - thisMonth.expense;
   const lastNet = lastMonth.income - lastMonth.expense;
-  const monthName = formatDay(data.today, { month: 'long', day: undefined, year: undefined });
+  const month = formatDay(data.today, { month: 'long', day: undefined, year: undefined }, intl);
 
   const cards = [
     {
-      label: 'Current balance',
+      key: 'balance',
+      label: o.currentBalance,
       value: signed(data.balance),
       badge: null,
-      footer: `${signed(net)} net in ${monthName}`,
-      sub: `Across ${data.transactionCount} recorded transaction${data.transactionCount === 1 ? '' : 's'}`,
+      footer: fmt(o.netIn, { amount: signed(net), month }),
+      sub: fmt(o.acrossTransactions, { count: data.transactionCount }),
     },
     {
-      label: `Income · ${monthName}`,
-      value: formatCAD(thisMonth.income),
-      badge: <ChangeBadge change={percentChange(thisMonth.income, lastMonth.income)} />,
-      footer: `Last month: ${formatCAD(lastMonth.income)}`,
-      sub: 'Money received this month',
+      key: 'income',
+      label: fmt(o.incomeMonth, { month }),
+      value: money(thisMonth.income),
+      badge: (
+        <ChangeBadge change={percentChange(thisMonth.income, lastMonth.income)} intl={intl} />
+      ),
+      footer: fmt(o.lastMonth, { amount: money(lastMonth.income) }),
+      sub: o.receivedThisMonth,
     },
     {
-      label: `Expenses · ${monthName}`,
-      value: formatCAD(thisMonth.expense),
-      badge: <ChangeBadge change={percentChange(thisMonth.expense, lastMonth.expense)} />,
-      footer: `Last month: ${formatCAD(lastMonth.expense)}`,
-      sub: 'Money spent this month',
+      key: 'expense',
+      label: fmt(o.expensesMonth, { month }),
+      value: money(thisMonth.expense),
+      badge: (
+        <ChangeBadge change={percentChange(thisMonth.expense, lastMonth.expense)} intl={intl} />
+      ),
+      footer: fmt(o.lastMonth, { amount: money(lastMonth.expense) }),
+      sub: o.spentThisMonth,
     },
     {
-      label: `Net · ${monthName}`,
+      key: 'net',
+      label: fmt(o.netMonth, { month }),
       value: signed(net),
       badge: null,
-      footer: `Last month: ${signed(lastNet)}`,
-      sub: net >= 0 ? 'More came in than went out' : 'More went out than came in',
+      footer: fmt(o.lastMonth, { amount: signed(lastNet) }),
+      sub: net >= 0 ? o.moreIn : o.moreOut,
     },
   ];
 
   return (
     <div className='grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4 dark:*:data-[slot=card]:bg-card'>
       {cards.map((c) => (
-        <Card key={c.label} className='@container/card'>
+        <Card key={c.key} className='@container/card'>
           <CardHeader>
             <CardDescription>{c.label}</CardDescription>
             <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>

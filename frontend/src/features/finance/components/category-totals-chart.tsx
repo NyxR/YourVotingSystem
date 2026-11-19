@@ -26,22 +26,29 @@ import { cn } from '@/lib/utils';
 import { fetchTotalsByCategory } from '../actions/reports.actions';
 import type { CategoryTotal, DateRange } from '../queries';
 import type { TransactionType } from '../schemas';
+import { useI18n } from '@/i18n/client';
+import type { Messages } from '@/i18n/messages/en';
 import { EmptyChart } from './income-expense-chart';
 
+type ChartKey = keyof Messages['charts'];
+
+/** Per-type message keys and bar colour. */
 const COPY: Record<
   TransactionType,
-  { title: string; verb: string; empty: string; color: string }
+  { title: ChartKey; verb: ChartKey; label: ChartKey; empty: ChartKey; color: string }
 > = {
   INCOME: {
-    title: 'Income by category',
+    title: 'incomeByCategory',
     verb: 'received',
-    empty: 'No income in this period.',
+    label: 'receivedLabel',
+    empty: 'noIncome',
     color: 'var(--income)',
   },
   EXPENSE: {
-    title: 'Expenses by category',
+    title: 'expensesByCategory',
     verb: 'spent',
-    empty: 'No expenses in this period.',
+    label: 'spentLabel',
+    empty: 'noExpenses',
     color: 'var(--expense)',
   },
 };
@@ -49,8 +56,9 @@ const COPY: Record<
 /** Bars shown before the rest fold into "Other". */
 const MAX_BARS = 7;
 
-function describeRange({ from, to }: DateRange) {
-  return from === to ? formatDay(from) : `${formatDay(from)} – ${formatDay(to)}`;
+function describeRange({ from, to }: DateRange, intl: string) {
+  const day = (iso: string) => formatDay(iso, {}, intl);
+  return from === to ? day(from) : `${day(from)} – ${day(to)}`;
 }
 
 /** Bar chart of income or expense totals per category over a chosen date range. */
@@ -65,6 +73,7 @@ export function CategoryTotalsChart({
   /** First to last day of the current month. */
   defaultRange: DateRange;
 }) {
+  const { t, intl } = useI18n();
   const [range, setRange] = useState<DateRange>(defaultRange);
   const [totals, setTotals] = useState<CategoryTotal[]>(initialData);
   const [loading, setLoading] = useState(false);
@@ -73,16 +82,16 @@ export function CategoryTotalsChart({
   const latestRequest = useRef(0);
   const copy = COPY[type];
   const chartConfig = {
-    amount: { label: copy.verb === 'spent' ? 'Spent' : 'Received', color: copy.color },
+    amount: { label: t.charts[copy.label], color: copy.color },
   } satisfies ChartConfig;
   const fromId = `${type.toLowerCase()}-from`;
   const toId = `${type.toLowerCase()}-to`;
 
   const rangeError =
     !range.from || !range.to
-      ? 'Pick both a start and an end date.'
+      ? t.validation.rangeBoth
       : range.from > range.to
-        ? 'The start date must be on or before the end date.'
+        ? t.validation.rangeOrder
         : null;
 
   const load = async (next: DateRange) => {
@@ -105,38 +114,41 @@ export function CategoryTotalsChart({
   const isDefault = range.from === defaultRange.from && range.to === defaultRange.to;
 
   const { data, total } = useMemo(() => {
-    const top = totals.slice(0, MAX_BARS);
-    const rest = totals.slice(MAX_BARS).reduce((s, r) => s + r.amount, 0);
-    if (rest > 0) top.push({ name: 'Other', amount: rest });
+    const named = totals.map((r) => ({ name: r.name ?? t.common.uncategorized, amount: r.amount }));
+    const top = named.slice(0, MAX_BARS);
+    const rest = named.slice(MAX_BARS).reduce((s, r) => s + r.amount, 0);
+    if (rest > 0) top.push({ name: t.charts.other, amount: rest });
     return { data: top, total: totals.reduce((s, r) => s + r.amount, 0) };
-  }, [totals]);
+  }, [totals, t]);
 
   return (
     <Card className='@container/card flex flex-col'>
       <CardHeader>
-        <CardTitle>{copy.title}</CardTitle>
+        <CardTitle>{t.charts[copy.title]}</CardTitle>
         <CardDescription>
-          {rangeError ? 'Choose a date range' : `${describeRange(range)} · ${formatCAD(total)} ${copy.verb}`}
+          {rangeError
+            ? t.charts.chooseRange
+            : `${describeRange(range, intl)} · ${formatCAD(total, intl)} ${t.charts[copy.verb]}`}
         </CardDescription>
         <CardAction className='flex flex-wrap items-center justify-end gap-2'>
           {loading && (
-            <Loader2Icon className='size-4 animate-spin text-muted-foreground' aria-label='Loading' />
+            <Loader2Icon className='size-4 animate-spin text-muted-foreground' aria-label={t.common.loading} />
           )}
           {!isDefault && (
             <Button
               variant='ghost'
               size='icon'
               className='size-8'
-              title='Back to this month'
+              title={t.charts.backToThisMonth}
               onClick={() => updateRange(defaultRange)}
             >
               <RotateCcwIcon />
-              <span className='sr-only'>Back to this month</span>
+              <span className='sr-only'>{t.charts.backToThisMonth}</span>
             </Button>
           )}
           <div className='flex items-center gap-1.5'>
             <Label htmlFor={fromId} className='text-sm text-muted-foreground'>
-              From
+              {t.common.from}
             </Label>
             <Input
               id={fromId}
@@ -150,7 +162,7 @@ export function CategoryTotalsChart({
           </div>
           <div className='flex items-center gap-1.5'>
             <Label htmlFor={toId} className='text-sm text-muted-foreground'>
-              To
+              {t.common.to}
             </Label>
             <Input
               id={toId}
@@ -171,7 +183,7 @@ export function CategoryTotalsChart({
       </CardHeader>
       <CardContent className={cn('flex-1 transition-opacity', loading && 'opacity-50')} aria-busy={loading}>
         {data.length === 0 ? (
-          <EmptyChart message={copy.empty} />
+          <EmptyChart message={t.charts[copy.empty]} />
         ) : (
           <ChartContainer
             config={chartConfig}
@@ -197,7 +209,7 @@ export function CategoryTotalsChart({
                       <div className='flex w-full justify-between gap-4'>
                         <span className='text-muted-foreground'>{chartConfig.amount.label}</span>
                         <span className='font-mono font-medium tabular-nums text-foreground'>
-                          {formatCAD(Number(value))} ·{' '}
+                          {formatCAD(Number(value), intl)} ·{' '}
                           {total ? Math.round((Number(value) / total) * 100) : 0}%
                         </span>
                       </div>
@@ -212,7 +224,7 @@ export function CategoryTotalsChart({
                   offset={8}
                   className='fill-foreground'
                   fontSize={12}
-                  formatter={(v) => formatCADCompact(Number(v))}
+                  formatter={(v) => formatCADCompact(Number(v), intl)}
                 />
               </Bar>
             </BarChart>

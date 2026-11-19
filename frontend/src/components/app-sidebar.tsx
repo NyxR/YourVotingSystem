@@ -21,15 +21,8 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { APP_NAME } from '@/lib/app';
+import { useI18n } from '@/i18n/client';
 import type { Role } from '@/lib/roles';
-
-const financeNav: NavItem[] = [
-  { title: 'Overview', url: '/main/finance', icon: <PieChartIcon /> },
-  { title: 'Transactions', url: '/main/transactions', icon: <ArrowLeftRightIcon /> },
-  { title: 'Categories', url: '/main/categories', icon: <TagsIcon /> },
-];
-
-const adminNav: NavItem[] = [{ title: 'Users', url: '/main/users', icon: <UsersIcon /> }];
 
 export type SidebarUser = { name: string; email: string; role: Role };
 
@@ -37,6 +30,14 @@ export function AppSidebar({
   user,
   ...props
 }: React.ComponentProps<typeof Sidebar> & { user: SidebarUser }) {
+  const { t } = useI18n();
+  const financeNav: NavItem[] = [
+    { title: t.nav.overview, url: '/main/finance', icon: <PieChartIcon /> },
+    { title: t.nav.transactions, url: '/main/transactions', icon: <ArrowLeftRightIcon /> },
+    { title: t.nav.categories, url: '/main/categories', icon: <TagsIcon /> },
+  ];
+  const adminNav: NavItem[] = [{ title: t.nav.users, url: '/main/users', icon: <UsersIcon /> }];
+
   return (
     <Sidebar collapsible='offcanvas' {...props}>
       <SidebarHeader>
@@ -52,8 +53,8 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain label='Finance' items={financeNav} />
-        {user.role === 'admin' && <NavMain label='Administration' items={adminNav} />}
+        <NavMain label={t.nav.finance} items={financeNav} />
+        {user.role === 'admin' && <NavMain label={t.nav.administration} items={adminNav} />}
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={user} />

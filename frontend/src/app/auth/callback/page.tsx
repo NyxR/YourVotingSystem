@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import Link from 'next/link';
 import { AuthShell } from '@/features/auth/components/auth-shell';
+import { useI18n } from '@/i18n/client';
 
 /**
  * Fallback for auth emails that still use Supabase's default templates: those
@@ -13,6 +14,7 @@ import { AuthShell } from '@/features/auth/components/auth-shell';
  */
 export default function AuthCallbackPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
@@ -42,16 +44,16 @@ export default function AuthCallbackPage() {
 
   return (
     <AuthShell
-      title={failed ? 'Link invalid or expired' : 'Signing you in…'}
-      description={failed ? 'Ask an administrator for a new invitation, or reset your password.' : undefined}
+      title={failed ? t.auth.linkInvalidTitle : t.auth.signingInEllipsis}
+      description={failed ? t.auth.linkInvalidDescription : undefined}
     >
       {failed && (
         <div className='flex flex-col gap-2 text-center text-sm'>
           <Link href='/forgot-password' className='underline-offset-4 hover:underline'>
-            Reset my password
+            {t.auth.resetMyPassword}
           </Link>
           <Link href='/login' className='underline-offset-4 hover:underline'>
-            Back to sign in
+            {t.auth.backToSignIn}
           </Link>
         </div>
       )}

@@ -36,12 +36,16 @@ export function monthStart(iso: string, offset = 0): string {
   return dateToISO(d);
 }
 
-/** "2026-11-05" -> "Nov 5, 2026" (rendered in UTC so the day never shifts). */
+/**
+ * "2026-11-05" -> "Nov 5, 2026" (en-CA) / "5 nov. 2026" (fr-CA).
+ * Rendered in UTC so the calendar day never shifts.
+ */
 export function formatDay(
   iso: string,
   opts: Intl.DateTimeFormatOptions = {},
+  intl = 'en-CA',
 ) {
-  return isoToDate(iso).toLocaleDateString('en-CA', {
+  return isoToDate(iso).toLocaleDateString(intl, {
     timeZone: 'UTC',
     month: 'short',
     day: 'numeric',

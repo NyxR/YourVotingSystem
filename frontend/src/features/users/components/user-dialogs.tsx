@@ -29,7 +29,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ROLE_DESCRIPTIONS, ROLE_LABELS, ROLES } from '@/lib/roles';
+import { ROLES, type Role } from '@/lib/roles';
+import { fmt } from '@/i18n/config';
+import { useI18n } from '@/i18n/client';
+import { tErrors } from '@/i18n/validation';
 import { inviteUser, updateUser } from '../actions/user.actions';
 import {
   inviteUserSchema,
@@ -40,13 +43,14 @@ import {
 } from '../schemas/user.schema';
 
 function RoleField<T extends FieldValues>({ control, name }: { control: Control<T>; name: Path<T> }) {
+  const { t } = useI18n();
   return (
     <Controller
       control={control}
       name={name}
       render={({ field }) => (
         <Field>
-          <FieldLabel htmlFor='user-role'>Role</FieldLabel>
+          <FieldLabel htmlFor='user-role'>{t.users.role}</FieldLabel>
           <Select value={field.value} onValueChange={field.onChange}>
             <SelectTrigger id='user-role' className='w-full'>
               <SelectValue />
@@ -54,12 +58,12 @@ function RoleField<T extends FieldValues>({ control, name }: { control: Control<
             <SelectContent>
               {ROLES.map((r) => (
                 <SelectItem key={r} value={r}>
-                  {ROLE_LABELS[r]}
+                  {t.roles[r]}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-          <FieldDescription>{ROLE_DESCRIPTIONS[field.value as keyof typeof ROLE_DESCRIPTIONS]}</FieldDescription>
+          <FieldDescription>{t.roleDescriptions[field.value as Role]}</FieldDescription>
         </Field>
       )}
     />
@@ -67,15 +71,16 @@ function RoleField<T extends FieldValues>({ control, name }: { control: Control<
 }
 
 function NameField<T extends FieldValues>({ control, name }: { control: Control<T>; name: Path<T> }) {
+  const { t } = useI18n();
   return (
     <Controller
       control={control}
       name={name}
       render={({ field, fieldState }) => (
         <Field data-invalid={fieldState.invalid}>
-          <FieldLabel htmlFor='user-name'>Full name</FieldLabel>
+          <FieldLabel htmlFor='user-name'>{t.users.fullName}</FieldLabel>
           <Input {...field} id='user-name' autoComplete='off' aria-invalid={fieldState.invalid} />
-          {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+          {fieldState.invalid && <FieldError errors={tErrors(t, fieldState.error)} />}
         </Field>
       )}
     />
@@ -89,6 +94,7 @@ export function InviteUserDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { t } = useI18n();
   const form = useForm<TInviteUser>({
     resolver: zodResolver(inviteUserSchema),
     defaultValues: { username: '', email: '', role: 'viewer' },
@@ -101,7 +107,7 @@ export function InviteUserDialog({
   const onSubmit = async (values: TInviteUser) => {
     const result = await inviteUser(values);
     if (result.success) {
-      toast.success(`Invitation sent to ${values.email}`);
+      toast.success(fmt(t.users.inviteSent, { email: values.email }));
       onOpenChange(false);
     } else {
       toast.error(result.message);
@@ -112,9 +118,9 @@ export function InviteUserDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='sm:max-w-md'>
         <DialogHeader>
-          <DialogTitle>Invite a user</DialogTitle>
+          <DialogTitle>{t.users.inviteTitle}</DialogTitle>
           <DialogDescription>
-            They&apos;ll receive an email with a link to choose their password.
+            {t.users.inviteDescription}
           </DialogDescription>
         </DialogHeader>
         <form id='invite-user-form' onSubmit={form.handleSubmit(onSubmit)}>
@@ -125,16 +131,16 @@ export function InviteUserDialog({
               name='email'
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor='user-email'>Email</FieldLabel>
+                  <FieldLabel htmlFor='user-email'>{t.users.email}</FieldLabel>
                   <Input
                     {...field}
                     id='user-email'
                     type='email'
-                    placeholder='name@example.org'
+                    placeholder={t.users.emailPlaceholder}
                     autoComplete='off'
                     aria-invalid={fieldState.invalid}
                   />
-                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  {fieldState.invalid && <FieldError errors={tErrors(t, fieldState.error)} />}
                 </Field>
               )}
             />
@@ -143,10 +149,10 @@ export function InviteUserDialog({
         </form>
         <DialogFooter>
           <DialogClose asChild>
-            <Button variant='outline'>Cancel</Button>
+            <Button variant='outline'>{t.common.cancel}</Button>
           </DialogClose>
           <Button type='submit' form='invite-user-form' disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? 'Sending…' : 'Send invitation'}
+            {form.formState.isSubmitting ? t.auth.sending : t.users.sendInvitation}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -161,6 +167,7 @@ export function EditUserDialog({
   user: UserRow | null;
   onClose: () => void;
 }) {
+  const { t } = useI18n();
   const form = useForm<TUpdateUser>({
     resolver: zodResolver(updateUserSchema),
     defaultValues: { username: '', role: 'viewer' },
@@ -174,7 +181,7 @@ export function EditUserDialog({
     if (!user) return;
     const result = await updateUser(user.id, values);
     if (result.success) {
-      toast.success('User updated');
+      toast.success(t.users.updated);
       onClose();
     } else {
       toast.error(result.message);
@@ -185,7 +192,7 @@ export function EditUserDialog({
     <Dialog open={!!user} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className='sm:max-w-md'>
         <DialogHeader>
-          <DialogTitle>Edit user</DialogTitle>
+          <DialogTitle>{t.users.editTitle}</DialogTitle>
           <DialogDescription>{user?.email}</DialogDescription>
         </DialogHeader>
         <form id='edit-user-form' onSubmit={form.handleSubmit(onSubmit)}>
@@ -196,10 +203,10 @@ export function EditUserDialog({
         </form>
         <DialogFooter>
           <DialogClose asChild>
-            <Button variant='outline'>Cancel</Button>
+            <Button variant='outline'>{t.common.cancel}</Button>
           </DialogClose>
           <Button type='submit' form='edit-user-form' disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? 'Saving…' : 'Save changes'}
+            {form.formState.isSubmitting ? t.common.saving : t.common.saveChanges}
           </Button>
         </DialogFooter>
       </DialogContent>

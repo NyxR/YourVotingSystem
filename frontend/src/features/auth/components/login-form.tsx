@@ -7,8 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { signIn, type AuthFormState } from '../actions/auth.actions';
 import { FormAlert } from './auth-shell';
+import { useI18n } from '@/i18n/client';
 
 export function LoginForm({ initialError }: { initialError?: string }) {
+  const { t } = useI18n();
   const [state, action, pending] = useActionState<AuthFormState, FormData>(
     signIn,
     { error: initialError },
@@ -19,13 +21,13 @@ export function LoginForm({ initialError }: { initialError?: string }) {
       <FieldGroup>
         {state.error && <FormAlert tone='error'>{state.error}</FormAlert>}
         <Field>
-          <FieldLabel htmlFor='email'>Email</FieldLabel>
+          <FieldLabel htmlFor='email'>{t.auth.email}</FieldLabel>
           <Input
             id='email'
             name='email'
             type='email'
             autoComplete='email'
-            placeholder='you@example.org'
+            placeholder={t.auth.emailPlaceholder}
             defaultValue={state.email}
             required
             autoFocus
@@ -33,12 +35,12 @@ export function LoginForm({ initialError }: { initialError?: string }) {
         </Field>
         <Field>
           <div className='flex items-center'>
-            <FieldLabel htmlFor='password'>Password</FieldLabel>
+            <FieldLabel htmlFor='password'>{t.auth.password}</FieldLabel>
             <Link
               href='/forgot-password'
               className='ml-auto text-sm underline-offset-4 hover:underline'
             >
-              Forgot your password?
+              {t.auth.forgotPassword}
             </Link>
           </div>
           <Input
@@ -50,7 +52,7 @@ export function LoginForm({ initialError }: { initialError?: string }) {
           />
         </Field>
         <Button type='submit' className='w-full' disabled={pending}>
-          {pending ? 'Signing in…' : 'Sign in'}
+          {pending ? t.auth.signingIn : t.auth.signIn}
         </Button>
       </FieldGroup>
     </form>

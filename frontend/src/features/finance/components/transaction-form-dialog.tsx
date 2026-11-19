@@ -32,12 +32,13 @@ import {
 } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { TYPE_TOGGLE_CLASS } from "./type-toggle-styles";
-import { centsToDecimal } from "@/lib/money";
+import { centsToInput } from "@/lib/money";
+import { useI18n } from "@/i18n/client";
+import { tErrors, type ValidationKey } from "@/i18n/validation";
 import { todayISO } from "@/lib/dates";
 import { saveTransaction } from "../actions/transactions.actions";
 import {
   NO_CATEGORY,
-  PAYMENT_METHOD_LABELS,
   PAYMENT_METHODS,
   RECEIPT_ACCEPT,
   transactionFormSchema,
@@ -47,16 +48,16 @@ import {
   type TransactionRow,
 } from "../schemas";
 
-function defaultsFor(t?: TransactionRow): TransactionFormValues {
-  return t
+function defaultsFor(tx: TransactionRow | undefined, intl: string): TransactionFormValues {
+  return tx
     ? {
-        type: t.type,
-        date: t.date,
-        amount: centsToDecimal(t.amountCents),
-        description: t.description,
-        categoryId: t.categoryId ?? NO_CATEGORY,
-        paymentMethod: t.paymentMethod,
-        reference: t.reference ?? "",
+        type: tx.type,
+        date: tx.date,
+        amount: centsToInput(tx.amountCents, intl),
+        description: tx.description,
+        categoryId: tx.categoryId ?? NO_CATEGORY,
+        paymentMethod: tx.paymentMethod,
+        reference: tx.reference ?? "",
       }
     : {
         type: "EXPENSE",
@@ -104,13 +105,14 @@ function TransactionForm({
   transaction?: TransactionRow;
   onDone: () => void;
 }) {
+  const { t, intl } = useI18n();
   const isEdit = !!transaction;
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(transactionFormSchema),
-    defaultValues: defaultsFor(transaction),
+    defaultValues: defaultsFor(transaction, intl),
   });
   const [receipt, setReceipt] = useState<File | null>(null);
-  const [receiptError, setReceiptError] = useState<string | null>(null);
+  const [receiptError, setReceiptError] = useState<ValidationKey | null>(null);
   const [removeReceipt, setRemoveReceipt] = useState(false);
 
   const type = useWatch({ control: form.control, name: "type" });
@@ -126,7 +128,7 @@ function TransactionForm({
 
     const result = await saveTransaction(fd);
     if (result.success) {
-      toast.success(isEdit ? "Transaction updated" : "Transaction added");
+      toast.success(isEdit ? t.transactions.updated : t.transactions.added);
       onDone();
     } else {
       toast.error(result.message);
@@ -139,11 +141,10 @@ function TransactionForm({
     <>
       <DialogHeader>
         <DialogTitle>
-          {isEdit ? "Edit transaction" : "New transaction"}
+          {isEdit ? t.transactions.editTransaction : t.transactions.newTransaction}
         </DialogTitle>
         <DialogDescription>
-          Record money coming in or going out of the organization. Amounts are
-          in Canadian dollars.
+          {t.transactions.formDescription}
         </DialogDescription>
       </DialogHeader>
 
@@ -154,7 +155,7 @@ function TransactionForm({
             name="type"
             render={({ field }) => (
               <Field>
-                <FieldLabel>Type</FieldLabel>
+                <FieldLabel>{t.transactions.type}</FieldLabel>
                 <ToggleGroup
                   type="single"
                   variant="outline"
@@ -173,10 +174,10 @@ function TransactionForm({
                   }}
                 >
                   <ToggleGroupItem value="INCOME" className={TYPE_TOGGLE_CLASS.INCOME}>
-                    Money in
+                    {t.transactions.moneyIn}
                   </ToggleGroupItem>
                   <ToggleGroupItem value="EXPENSE" className={TYPE_TOGGLE_CLASS.EXPENSE}>
-                    Money out
+                    {t.transactions.moneyOut}
                   </ToggleGroupItem>
                 </ToggleGroup>
               </Field>
@@ -189,7 +190,7 @@ function TransactionForm({
               name="amount"
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="tx-amount">Amount (CAD)</FieldLabel>
+                  <FieldLabel htmlFor="tx-amount">{t.transactions.amount}</FieldLabel>
                   <div className="relative">
                     <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-sm text-muted-foreground">
                       $
@@ -198,14 +199,14 @@ function TransactionForm({
                       {...field}
                       id="tx-amount"
                       inputMode="decimal"
-                      placeholder="0.00"
+                      placeholder={intl.startsWith("fr") ? "0,00" : "0.00"}
                       className="pl-6 tabular-nums"
                       aria-invalid={fieldState.invalid}
                       autoComplete="off"
                     />
                   </div>
                   {fieldState.invalid && (
-                    <FieldError errors={[fieldState.error]} />
+                    <FieldError errors={tErrors(t, fieldState.error)} />
                   )}
                 </Field>
               )}
@@ -215,7 +216,7 @@ function TransactionForm({
               name="date"
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="tx-date">Date</FieldLabel>
+                  <FieldLabel htmlFor="tx-date">{t.transactions.date}</FieldLabel>
                   <Input
                     {...field}
                     id="tx-date"
@@ -223,7 +224,7 @@ function TransactionForm({
                     aria-invalid={fieldState.invalid}
                   />
                   {fieldState.invalid && (
-                    <FieldError errors={[fieldState.error]} />
+                    <FieldError errors={tErrors(t, fieldState.error)} />
                   )}
                 </Field>
               )}
@@ -235,20 +236,20 @@ function TransactionForm({
             name="description"
             render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor="tx-description">Description</FieldLabel>
+                <FieldLabel htmlFor="tx-description">{t.transactions.description}</FieldLabel>
                 <Input
                   {...field}
                   id="tx-description"
                   placeholder={
                     type === "INCOME"
-                      ? "e.g. Sunday collection"
-                      : "e.g. Hall rental for November"
+                      ? t.transactions.descriptionIncomePlaceholder
+                      : t.transactions.descriptionExpensePlaceholder
                   }
                   aria-invalid={fieldState.invalid}
                   autoComplete="off"
                 />
                 {fieldState.invalid && (
-                  <FieldError errors={[fieldState.error]} />
+                  <FieldError errors={tErrors(t, fieldState.error)} />
                 )}
               </Field>
             )}
@@ -260,13 +261,13 @@ function TransactionForm({
               name="categoryId"
               render={({ field }) => (
                 <Field>
-                  <FieldLabel htmlFor="tx-category">Category</FieldLabel>
+                  <FieldLabel htmlFor="tx-category">{t.transactions.category}</FieldLabel>
                   <Select value={field.value} onValueChange={field.onChange}>
                     <SelectTrigger id="tx-category" className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={NO_CATEGORY}>Uncategorized</SelectItem>
+                      <SelectItem value={NO_CATEGORY}>{t.common.uncategorized}</SelectItem>
                       {categoriesForType.map((c) => (
                         <SelectItem key={c.id} value={c.id}>
                           {c.name}
@@ -282,7 +283,7 @@ function TransactionForm({
               name="paymentMethod"
               render={({ field }) => (
                 <Field>
-                  <FieldLabel htmlFor="tx-method">Payment method</FieldLabel>
+                  <FieldLabel htmlFor="tx-method">{t.transactions.paymentMethod}</FieldLabel>
                   <Select value={field.value} onValueChange={field.onChange}>
                     <SelectTrigger id="tx-method" className="w-full">
                       <SelectValue />
@@ -290,7 +291,7 @@ function TransactionForm({
                     <SelectContent>
                       {PAYMENT_METHODS.map((m) => (
                         <SelectItem key={m} value={m}>
-                          {PAYMENT_METHOD_LABELS[m]}
+                          {t.paymentMethods[m]}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -306,18 +307,18 @@ function TransactionForm({
             render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
                 <FieldLabel htmlFor="tx-reference">
-                  Reference{" "}
-                  <span className="text-muted-foreground">(optional)</span>
+                  {t.transactions.reference}{" "}
+                  <span className="text-muted-foreground">{t.common.optional}</span>
                 </FieldLabel>
                 <Input
                   {...field}
                   id="tx-reference"
-                  placeholder="Cheque #, e-Transfer ID, invoice #…"
+                  placeholder={t.transactions.referencePlaceholder}
                   aria-invalid={fieldState.invalid}
                   autoComplete="off"
                 />
                 {fieldState.invalid && (
-                  <FieldError errors={[fieldState.error]} />
+                  <FieldError errors={tErrors(t, fieldState.error)} />
                 )}
               </Field>
             )}
@@ -325,7 +326,8 @@ function TransactionForm({
 
           <Field data-invalid={!!receiptError}>
             <FieldLabel htmlFor="tx-receipt">
-              Receipt <span className="text-muted-foreground">(optional)</span>
+              {t.transactions.receipt}{" "}
+              <span className="text-muted-foreground">{t.common.optional}</span>
             </FieldLabel>
             {hasExistingReceipt && !receipt && (
               <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
@@ -336,7 +338,7 @@ function TransactionForm({
                   rel="noreferrer"
                   className="underline-offset-4 hover:underline"
                 >
-                  Current receipt
+                  {t.transactions.currentReceipt}
                 </a>
                 <Button
                   type="button"
@@ -345,7 +347,7 @@ function TransactionForm({
                   className="ml-auto h-7"
                   onClick={() => setRemoveReceipt(true)}
                 >
-                  <XIcon /> Remove
+                  <XIcon /> {t.transactions.remove}
                 </Button>
               </div>
             )}
@@ -361,14 +363,12 @@ function TransactionForm({
               }}
             />
             {receiptError ? (
-              <FieldError>{receiptError}</FieldError>
+              <FieldError>{t.validation[receiptError]}</FieldError>
             ) : (
               <FieldDescription>
-                JPG, PNG, WebP or PDF, up to 5 MB.
-                {hasExistingReceipt &&
-                  " Choosing a file replaces the current receipt."}
-                {removeReceipt &&
-                  " The current receipt will be removed when you save."}
+                {t.transactions.receiptHint}
+                {hasExistingReceipt && t.transactions.receiptReplaceHint}
+                {removeReceipt && t.transactions.receiptRemoveHint}
               </FieldDescription>
             )}
           </Field>
@@ -377,7 +377,7 @@ function TransactionForm({
 
       <DialogFooter>
         <DialogClose asChild>
-          <Button variant="outline">Cancel</Button>
+          <Button variant="outline">{t.common.cancel}</Button>
         </DialogClose>
         <Button
           type="submit"
@@ -385,10 +385,10 @@ function TransactionForm({
           disabled={form.formState.isSubmitting}
         >
           {form.formState.isSubmitting
-            ? "Saving…"
+            ? t.common.saving
             : isEdit
-              ? "Save changes"
-              : "Add transaction"}
+              ? t.common.saveChanges
+              : t.transactions.addTransaction}
         </Button>
       </DialogFooter>
     </>
