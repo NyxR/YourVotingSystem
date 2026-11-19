@@ -37,6 +37,13 @@ const fr: Messages = {
     allAmountsCad: 'Tous les montants sont en dollars canadiens (CAD).',
   },
 
+  theme: {
+    label: 'Thème',
+    light: 'Clair',
+    dark: 'Sombre',
+    system: 'Système',
+  },
+
   nav: {
     finance: 'Finances',
     overview: 'Aperçu',

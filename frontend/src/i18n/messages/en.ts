@@ -35,6 +35,13 @@ const en = {
     allAmountsCad: 'All amounts in Canadian dollars (CAD).',
   },
 
+  theme: {
+    label: 'Theme',
+    light: 'Light',
+    dark: 'Dark',
+    system: 'System',
+  },
+
   nav: {
     finance: 'Finance',
     overview: 'Overview',

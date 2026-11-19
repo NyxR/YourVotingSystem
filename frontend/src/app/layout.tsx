@@ -2,6 +2,7 @@
 // https://tailwindcss.com/docs/font-family
 import type { Metadata } from 'next';
 import { Inter, Merriweather, JetBrains_Mono } from 'next/font/google';
+import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/sonner';
 import { I18nProvider } from '@/i18n/client';
 import { getI18n } from '@/i18n/server';
@@ -39,14 +40,17 @@ export default async function RootLayout({
   const { locale, t } = await getI18n();
 
   return (
-    <html lang={locale}>
+    // next-themes sets the theme class on <html> before React hydrates.
+    <html lang={locale} suppressHydrationWarning>
       <body
         className={`${fontSans.variable} ${fontSerif.variable} ${fontMono.variable} antialiased`}
       >
-        <I18nProvider locale={locale} messages={t}>
-          {children}
-          <Toaster richColors={false} position='top-right' />
-        </I18nProvider>
+        <ThemeProvider>
+          <I18nProvider locale={locale} messages={t}>
+            {children}
+            <Toaster richColors={false} position='top-right' />
+          </I18nProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
