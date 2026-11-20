@@ -2,11 +2,12 @@ import { cache } from 'react';
 import { redirect } from 'next/navigation';
 import prisma from '@/lib/prisma';
 import { createSessionClient } from '@/lib/supabase/server';
-import { normalizeRole, type Role } from '@/lib/roles';
+import { isManager, normalizeRole, type Role } from '@/lib/roles';
 import type { MemberType } from '@/lib/member-types';
 import { normalizeResponsibilities, type Responsibility } from '@/lib/responsibilities';
 import { getI18n } from '@/i18n/server';
 import type { Messages } from '@/i18n/messages/en';
+import { HOME_PATH } from '@/lib/app';
 
 export type CurrentUser = {
   id: string;
@@ -20,9 +21,9 @@ export type CurrentUser = {
 };
 
 export const can = {
-  manageUsers: (u: Pick<CurrentUser, 'role'>) => u.role === 'admin',
-  editFinance: (u: Pick<CurrentUser, 'role'>) =>
-    u.role === 'admin' || u.role === 'treasurer',
+  manageUsers: (u: Pick<CurrentUser, 'role'>) => isManager(u.role),
+  // Only treasurers record money; everything else admins and treasurers share.
+  editFinance: (u: Pick<CurrentUser, 'role'>) => u.role === 'treasurer',
 };
 
 /**
@@ -94,7 +95,7 @@ export async function requirePageAccess(
   check: (u: CurrentUser) => boolean,
 ): Promise<CurrentUser> {
   const user = await requireUser();
-  if (!check(user)) redirect('/main/finance');
+  if (!check(user)) redirect(HOME_PATH);
   return user;
 }
 

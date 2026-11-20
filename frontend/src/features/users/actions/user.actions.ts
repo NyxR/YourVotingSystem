@@ -10,6 +10,7 @@ import { translateValidation } from '@/i18n/validation';
 import type { Messages } from '@/i18n/messages/en';
 import { toE164 } from '@/lib/phone';
 import { normalizeResponsibilities } from '@/lib/responsibilities';
+import { isManager, normalizeRole } from '@/lib/roles';
 import { listAuthUsers } from '../queries';
 import {
   inviteUserSchema,
@@ -35,8 +36,7 @@ async function invalid(message: string | undefined): Promise<ActionResult> {
 /** Empty -> null; otherwise the validated number in E.164. */
 const storedPhone = (phone: string) => (phone ? toE164(phone) : null);
 
-const setPasswordRedirect = async () =>
-  `${await getSiteUrl()}/auth/confirm?next=/set-password`;
+const setPasswordRedirect = async () => `${await getSiteUrl()}/auth/confirm?next=/set-password`;
 
 /**
  * Sends a Supabase invite email and returns the auth user id. If the email
@@ -126,7 +126,11 @@ export async function resendAccessEmail(userId: string): Promise<ActionResult> {
   }, 'userEmail');
 }
 
-/** Lets any signed-in user update their own contact number and responsibilities. */
+/**
+ * Lets any signed-in user update their own contact number. Responsibilities
+ * are deliberately not accepted here: they grant forum access (Diakona/Birao),
+ * so only admins change them (updateUser).
+ */
 export async function updateMyProfile(values: TProfile): Promise<ActionResult> {
   return runAction(async () => {
     const me = await authorize();
@@ -134,17 +138,17 @@ export async function updateMyProfile(values: TProfile): Promise<ActionResult> {
     if (!parsed.success) return invalid(parsed.error.issues[0]?.message);
     await prisma.user.update({
       where: { id: me.id },
-      data: {
-        phone: storedPhone(parsed.data.phone),
-        responsibilities: normalizeResponsibilities(parsed.data.responsibilities),
-      },
+      data: { phone: storedPhone(parsed.data.phone) },
     });
     revalidatePath('/main', 'layout');
   }, 'userUpdate');
 }
 
-async function countOtherAdmins(excludeId: string) {
-  return prisma.user.count({ where: { role: 'admin', id: { not: excludeId } } });
+/** People other than `excludeId` who can still manage users. */
+async function countOtherManagers(excludeId: string) {
+  return prisma.user.count({
+    where: { role: { in: ['admin', 'treasurer'] }, id: { not: excludeId } },
+  });
 }
 
 export async function updateUser(userId: string, values: TUpdateUser): Promise<ActionResult> {
@@ -157,7 +161,11 @@ export async function updateUser(userId: string, values: TUpdateUser): Promise<A
     const target = await prisma.user.findUnique({ where: { id: userId } });
     if (!target) return fail('userNotFound');
 
-    if (target.role === 'admin' && parsed.data.role !== 'admin' && (await countOtherAdmins(userId)) === 0) {
+    if (
+      isManager(normalizeRole(target.role)) &&
+      !isManager(parsed.data.role) &&
+      (await countOtherManagers(userId)) === 0
+    ) {
       return fail('lastAdmin');
     }
 
@@ -181,7 +189,7 @@ export async function deleteUser(userId: string): Promise<ActionResult> {
     }
     const target = await prisma.user.findUnique({ where: { id: userId } });
     if (!target) return fail('userNotFound');
-    if (target.role === 'admin' && (await countOtherAdmins(userId)) === 0) {
+    if (isManager(normalizeRole(target.role)) && (await countOtherManagers(userId)) === 0) {
       return fail('lastAdmin');
     }
 

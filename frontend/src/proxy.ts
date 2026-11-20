@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { HOME_PATH } from '@/lib/app';
 
 /** Paths reachable without a session. */
 const PUBLIC_PATHS = ['/login', '/forgot-password', '/auth/'];
@@ -53,7 +54,7 @@ export async function proxy(request: NextRequest) {
 
   if (!user && !isPublic) return redirectTo('/login');
   if (user && (pathname === '/login' || pathname === '/forgot-password')) {
-    return redirectTo('/main/finance');
+    return redirectTo(HOME_PATH);
   }
 
   return response;

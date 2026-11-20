@@ -13,14 +13,14 @@ npm run db:migrate        # = prisma migrate deploy (uses DIRECT_URL)
 
 ## 2. Run the setup script
 
-Creates the private `receipts` storage bucket, seeds default categories, and
+Creates the private `receipts` and `forum` storage buckets, seeds default categories, and
 creates your first admin login:
 
 ```bash
 npm run setup -- --email you@example.org --name "Your Name" --password "choose-a-strong-one"
 ```
 
-It is safe to re-run. Without `--email` it only does the bucket and categories.
+It is safe to re-run. Without `--email` it only does the buckets and categories.
 
 ## 3. Configure Supabase Auth (dashboard)
 
@@ -53,8 +53,8 @@ NEXT_PUBLIC_APP_TIMEZONE=America/Toronto   # decides what "today" / "this month"
 
 | Role      | Can do                                                        |
 | --------- | ------------------------------------------------------------- |
-| Admin     | Everything, including inviting, editing and removing users    |
-| Treasurer | Add, edit and delete transactions, receipts and categories    |
+| Admin     | Invite, edit and remove users; moderate the forum; finance is read-only |
+| Treasurer | Everything an Admin can do, plus add, edit and delete transactions, receipts and categories |
 | Viewer    | Read-only access to the finance pages and CSV export          |
 
 Users from before this change (no login yet) show as **Not invited** on the

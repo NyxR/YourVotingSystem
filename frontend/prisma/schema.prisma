@@ -32,6 +32,11 @@ model User {
   updatedAt           DateTime         @default(now()) @updatedAt
   transactionsCreated Transaction[]    @relation("TransactionCreatedBy")
   transactionsUpdated Transaction[]    @relation("TransactionUpdatedBy")
+  forumTopics         ForumTopic[]
+  forumComments       ForumComment[]
+  forumLikes          ForumLike[]
+  forumReads          ForumRead[]
+  forumImages         ForumImage[]
 }
 
 enum Responsibility {
@@ -95,4 +100,116 @@ model Transaction {
 
   @@index([date])
   @@index([categoryId])
+}
+
+// ─── Forum ─────────────────────────────────────────────────────
+
+/// Who can see a forum category (and every topic in it). Admins see all.
+enum ForumVisibility {
+  EVERYONE
+  DIAKONA
+  BIRAO
+}
+
+model ForumCategory {
+  id          String          @id @default(cuid())
+  name        String          @unique
+  description String?
+  /// Colour key from the app's palette (see src/features/forum/colors.ts).
+  color       String          @default("blue")
+  visibility  ForumVisibility @default(EVERYONE)
+  /// Display order, ascending.
+  position    Int             @default(0)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @default(now()) @updatedAt
+  topics      ForumTopic[]
+}
+
+model ForumTopic {
+  id             String         @id @default(cuid())
+  categoryId     String
+  category       ForumCategory  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  title          String
+  /// Markdown.
+  body           String
+  authorId       String?
+  author         User?          @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  pinned         Boolean        @default(false)
+  locked         Boolean        @default(false)
+  commentCount   Int            @default(0)
+  /// Creation time, bumped by every new comment; topics sort by it.
+  lastActivityAt DateTime       @default(now())
+  /// Set when the author/an admin edits the body or title.
+  editedAt       DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @default(now()) @updatedAt
+  comments       ForumComment[]
+  likes          ForumLike[]
+  reads          ForumRead[]
+  images         ForumImage[]
+
+  @@index([categoryId, lastActivityAt])
+  @@index([pinned, lastActivityAt])
+}
+
+model ForumComment {
+  id        String         @id @default(cuid())
+  topicId   String
+  topic     ForumTopic     @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  /// Markdown.
+  body      String
+  authorId  String?
+  author    User?          @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  /// The comment this one answers ("in reply to …"), if any.
+  replyToId String?
+  replyTo   ForumComment?  @relation("ForumReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies   ForumComment[] @relation("ForumReplies")
+  editedAt  DateTime?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @default(now()) @updatedAt
+  likes     ForumLike[]
+
+  @@index([topicId, createdAt])
+}
+
+/// A like on either a topic (its opening post) or a comment.
+model ForumLike {
+  id        String        @id @default(cuid())
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topicId   String?
+  topic     ForumTopic?   @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  commentId String?
+  comment   ForumComment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  createdAt DateTime      @default(now())
+
+  @@unique([userId, topicId])
+  @@unique([userId, commentId])
+  @@index([commentId])
+}
+
+/// When a user last opened a topic; drives the unread markers.
+model ForumRead {
+  userId     String
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topicId    String
+  topic      ForumTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  lastReadAt DateTime   @default(now())
+
+  @@id([userId, topicId])
+}
+
+/// An image uploaded for a post, stored in the private `forum` bucket. It
+/// is attached to its topic when the post is saved; access then follows the
+/// topic's category visibility (until then only the uploader can see it).
+model ForumImage {
+  id         String      @id @default(uuid())
+  path       String      @unique
+  uploaderId String?
+  uploader   User?       @relation(fields: [uploaderId], references: [id], onDelete: SetNull)
+  topicId    String?
+  topic      ForumTopic? @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  createdAt  DateTime    @default(now())
+
+  @@index([topicId])
 }

@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ROLES } from '@/lib/roles';
+import { isManager, ROLES } from '@/lib/roles';
 import { MEMBER_TYPE_LABELS, MEMBER_TYPES } from '@/lib/member-types';
 import {
   OPTIONAL_RESPONSIBILITIES,
@@ -155,7 +155,7 @@ export function UsersView({ users, currentUserId }: { users: UserRow[]; currentU
         accessorKey: 'role',
         header: ({ column }) => <SortableHeader column={column} title={t.users.colRole} />,
         cell: ({ row }) => (
-          <Badge variant={row.original.role === 'admin' ? 'default' : 'outline'}>
+          <Badge variant={isManager(row.original.role) ? 'default' : 'outline'}>
             {t.roles[row.original.role]}
           </Badge>
         ),

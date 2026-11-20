@@ -2,7 +2,7 @@
 //
 //   npm run setup -- --email you@example.org --name "Your Name" --password "a-strong-password"
 //
-// 1. Creates the private `receipts` Supabase Storage bucket (if missing).
+// 1. Creates the private `receipts` and `forum` Supabase Storage buckets (if missing).
 // 2. Seeds default income/expense categories (only when there are none).
 // 3. Creates (or promotes) an admin who can sign in with that email/password.
 //    Omit --email to skip this step.
@@ -38,19 +38,25 @@ const db = new pg.Client({ connectionString: process.env.DIRECT_URL });
 await db.connect();
 
 try {
-  // ── 1. Receipts bucket ────────────────────────────────────
+  // ── 1. Storage buckets (private; files are served via signed URLs) ──
   const { data: buckets, error: listError } = await supabase.storage.listBuckets();
   if (listError) throw listError;
-  if (buckets.some((b) => b.name === 'receipts')) {
-    console.log('✓ Storage bucket "receipts" already exists');
-  } else {
-    const { error } = await supabase.storage.createBucket('receipts', {
+  const wanted = {
+    receipts: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
+    forum: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
+  };
+  for (const [name, allowedMimeTypes] of Object.entries(wanted)) {
+    if (buckets.some((b) => b.name === name)) {
+      console.log(`✓ Storage bucket "${name}" already exists`);
+      continue;
+    }
+    const { error } = await supabase.storage.createBucket(name, {
       public: false,
       fileSizeLimit: '5MB',
-      allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
+      allowedMimeTypes,
     });
     if (error) throw error;
-    console.log('✓ Created private storage bucket "receipts"');
+    console.log(`✓ Created private storage bucket "${name}"`);
   }
 
   // ── 2. Default categories ─────────────────────────────────
@@ -112,13 +118,21 @@ try {
     const { rows } = await db.query('SELECT id FROM "User" WHERE lower(email) = $1', [email]);
     if (rows.length) {
       await db.query(
-        'UPDATE "User" SET "authId" = $1, role = \'admin\', "updatedAt" = now() WHERE id = $2',
+        // Only Birao may be Admin, and Birao must be Diakona and Mpandray.
+        `UPDATE "User" SET "authId" = $1, role = 'admin', "updatedAt" = now(),
+           "memberType" = 'MPANDRAY',
+           responsibilities = ARRAY(
+             SELECT DISTINCT unnest(responsibilities || ARRAY['BIRAO', 'DIAKONA']::"Responsibility"[])
+           )
+         WHERE id = $2`,
         [authUser.id, rows[0].id],
       );
       console.log(`✓ ${email} is now an admin`);
     } else {
       await db.query(
-        'INSERT INTO "User" (id, "authId", username, email, role) VALUES ($1, $2, $3, $4, \'admin\')',
+        `INSERT INTO "User" (id, "authId", username, email, role, "memberType", responsibilities)
+         VALUES ($1, $2, $3, $4, 'admin', 'MPANDRAY',
+                 ARRAY['BIRAO', 'DIAKONA', 'MPIARA_MIVAVAKA']::"Responsibility"[])`,
         [randomUUID(), authUser.id, name, email],
       );
       console.log(`✓ Created admin profile for ${email}`);

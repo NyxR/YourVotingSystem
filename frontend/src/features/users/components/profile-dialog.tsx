@@ -20,7 +20,7 @@ import { formatPhone } from '@/lib/phone';
 import type { Responsibility } from '@/lib/responsibilities';
 import { updateMyProfile } from '../actions/user.actions';
 import { profileSchema, type TProfile } from '../schemas/user.schema';
-import { PhoneField, ResponsibilitiesField } from './user-dialogs';
+import { PhoneField, ResponsibilitiesReadOnly } from './user-dialogs';
 
 type Me = {
   name: string;
@@ -55,7 +55,6 @@ function ProfileForm({ me, onDone }: { me: Me; onDone: () => void }) {
     resolver: zodResolver(profileSchema),
     defaultValues: {
       phone: me.phone ? formatPhone(me.phone) : '',
-      responsibilities: me.responsibilities,
     },
   });
 
@@ -86,7 +85,7 @@ function ProfileForm({ me, onDone }: { me: Me; onDone: () => void }) {
             <Input id='profile-email' value={me.email} readOnly disabled />
           </Field>
           <PhoneField control={form.control} name='phone' />
-          <ResponsibilitiesField control={form.control} name='responsibilities' />
+          <ResponsibilitiesReadOnly value={me.responsibilities} />
         </FieldGroup>
       </form>
       <DialogFooter>

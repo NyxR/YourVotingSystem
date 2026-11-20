@@ -28,17 +28,8 @@ import { useI18n } from "@/i18n/client";
 import { MEMBER_TYPE_LABELS } from "@/lib/member-types";
 import { ResponsibilityBadges } from "@/components/responsibility-badges";
 import type { SidebarUser } from "./app-sidebar";
+import { initials } from "@/lib/initials";
 
-function initials(name: string) {
-  return (
-    name
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((p) => p[0]!.toUpperCase())
-      .join("") || "?"
-  );
-}
 
 function UserSummary({
   user,

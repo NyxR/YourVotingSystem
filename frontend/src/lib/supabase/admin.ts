@@ -14,3 +14,4 @@ export function createAdminClient() {
 }
 
 export const RECEIPTS_BUCKET = 'receipts';
+export const FORUM_BUCKET = 'forum';

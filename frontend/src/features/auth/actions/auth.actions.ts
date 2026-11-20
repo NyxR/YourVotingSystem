@@ -6,6 +6,7 @@ import { createSessionClient } from '@/lib/supabase/server';
 import { findProfileForAuthUser } from '@/lib/auth';
 import { getSiteUrl } from '@/lib/site-url';
 import { getI18n } from '@/i18n/server';
+import { HOME_PATH } from '@/lib/app';
 
 export type AuthFormState = {
   error?: string;
@@ -44,7 +45,7 @@ export async function signIn(
     return { error: t.auth.errorNoProfile, email };
   }
 
-  redirect('/main/finance');
+  redirect(HOME_PATH);
 }
 
 export async function requestPasswordReset(
@@ -88,7 +89,7 @@ export async function setPassword(
     };
   }
 
-  redirect('/main/finance');
+  redirect(HOME_PATH);
 }
 
 export async function signOut() {
