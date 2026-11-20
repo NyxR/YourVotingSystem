@@ -4,11 +4,14 @@ import * as React from 'react';
 import Link from 'next/link';
 import {
   ArrowLeftRightIcon,
+  ChurchIcon,
   MessagesSquareIcon,
   PieChartIcon,
+  ShieldIcon,
   TagsIcon,
   UsersIcon,
   UsersRoundIcon,
+  WalletIcon,
 } from 'lucide-react';
 import { BrandLogo } from '@/components/brand-logo';
 import { NavMain, type NavItem } from '@/components/nav-main';
@@ -105,9 +108,11 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain label={t.nav.community} items={communityNav} />
-        <NavMain label={t.nav.finance} items={financeNav} />
-        {isManager(user.role) && <NavMain label={t.nav.administration} items={adminNav} />}
+        <NavMain label={t.nav.community} icon={<ChurchIcon />} items={communityNav} />
+        <NavMain label={t.nav.finance} icon={<WalletIcon />} items={financeNav} />
+        {isManager(user.role) && (
+          <NavMain label={t.nav.administration} icon={<ShieldIcon />} items={adminNav} />
+        )}
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={user} />

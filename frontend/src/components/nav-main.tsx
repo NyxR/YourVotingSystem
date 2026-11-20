@@ -21,14 +21,29 @@ export type NavItem = {
   badgeLabel?: string;
 };
 
-export function NavMain({ label, items }: { label?: string; items: NavItem[] }) {
+export function NavMain({
+  label,
+  icon,
+  items,
+}: {
+  label?: string;
+  /** Shown before the group title (brand blue). */
+  icon?: React.ReactNode;
+  items: NavItem[];
+}) {
   const pathname = usePathname();
 
   return (
     <SidebarGroup>
-      {label && <SidebarGroupLabel>{label}</SidebarGroupLabel>}
+      {label && (
+        <SidebarGroupLabel className='gap-2 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase [&>svg]:size-3.5 [&>svg]:text-primary'>
+          {icon}
+          {label}
+        </SidebarGroupLabel>
+      )}
       <SidebarGroupContent>
-        <SidebarMenu>
+        {/* Items line up with the title text (after its 14px icon + 8px gap). */}
+        <SidebarMenu className={icon ? 'pl-[22px]' : undefined}>
           {items.map((item) => (
             <SidebarMenuItem key={item.url}>
               <SidebarMenuButton
