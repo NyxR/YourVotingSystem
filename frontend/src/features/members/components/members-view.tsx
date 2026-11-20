@@ -65,11 +65,11 @@ function DateCell({ iso, intl }: { iso: string; intl: string }) {
 /** Read-only member list: same table as Users, without role/status/sign-in. */
 export function MembersView({
   members,
-  showPhone,
+  showContact,
 }: {
   members: MemberRow[];
-  /** Admins & treasurers only; the server omits numbers otherwise. */
-  showPhone: boolean;
+  /** Admins & treasurers only; the server omits emails and numbers otherwise. */
+  showContact: boolean;
 }) {
   const { t, intl } = useI18n();
   // Pagination is owned here and reset to page 1 from the filter handlers.
@@ -112,7 +112,9 @@ export function MembersView({
         cell: ({ row }) => (
           <div className='flex flex-col'>
             <span className='font-medium'>{row.original.username}</span>
-            <span className='text-xs text-muted-foreground'>{row.original.email}</span>
+            {row.original.email && (
+              <span className='text-xs text-muted-foreground'>{row.original.email}</span>
+            )}
           </div>
         ),
       },
@@ -130,7 +132,7 @@ export function MembersView({
         header: t.members.colResponsibilities,
         cell: ({ row }) => <ResponsibilityBadges values={row.original.responsibilities} />,
       },
-      ...(showPhone
+      ...(showContact
         ? [
             {
               id: 'phone',
@@ -152,7 +154,7 @@ export function MembersView({
         cell: ({ row }) => <DateCell iso={row.original.updatedAt} intl={intl} />,
       },
     ],
-    [t, intl, showPhone],
+    [t, intl, showContact],
   );
 
   const table = useReactTable({
@@ -164,7 +166,7 @@ export function MembersView({
     onGlobalFilterChange: setSearch,
     globalFilterFn: (row, _id, value: string) =>
       matchesSearch(
-        `${row.original.username} ${row.original.email}`,
+        `${row.original.username} ${row.original.email ?? ''}`,
         row.original.phone,
         value,
       ),
@@ -182,7 +184,7 @@ export function MembersView({
         <div className='relative min-w-48 flex-1 sm:max-w-sm'>
           <SearchIcon className='pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground' />
           <Input
-            placeholder={t.members.searchPlaceholder}
+            placeholder={showContact ? t.members.searchPlaceholder : t.members.searchByName}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className='pl-8'

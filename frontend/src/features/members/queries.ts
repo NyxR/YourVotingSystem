@@ -7,7 +7,8 @@ import { normalizeResponsibilities, type Responsibility } from '@/lib/responsibi
 export type MemberRow = {
   id: string;
   username: string;
-  email: string;
+  /** Omitted entirely for viewers (see getMembers). */
+  email?: string;
   memberType: MemberType;
   /** E.164 or null. Omitted entirely for viewers (see getMembers). */
   phone?: string | null;
@@ -20,17 +21,21 @@ export type MemberRow = {
 
 /**
  * Everyone with an app account, alphabetically. Visible to any signed-in user;
- * contact numbers are only selected when `includePhone` is true, so they never
- * reach viewers' browsers.
+ * emails and contact numbers are only selected when `includeContact` is true,
+ * so they never reach viewers' browsers.
  */
-export async function getMembers({ includePhone }: { includePhone: boolean }): Promise<MemberRow[]> {
+export async function getMembers({
+  includeContact,
+}: {
+  includeContact: boolean;
+}): Promise<MemberRow[]> {
   const rows = await prisma.user.findMany({
     select: {
       id: true,
       username: true,
-      email: true,
+      email: includeContact,
       memberType: true,
-      phone: includePhone,
+      phone: includeContact,
       responsibilities: true,
       createdAt: true,
       updatedAt: true,
