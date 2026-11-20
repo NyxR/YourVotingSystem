@@ -40,8 +40,15 @@ function toRow(t: TransactionWithRelations): TransactionRow {
   };
 }
 
-export async function getTransactions(): Promise<TransactionRow[]> {
+/** Transactions within an inclusive yyyy-MM-dd range; an empty side means no limit. */
+export async function getTransactions({ from, to }: DateRange): Promise<TransactionRow[]> {
   const rows = await prisma.transaction.findMany({
+    where: {
+      date: {
+        ...(from ? { gte: isoToDate(from) } : {}),
+        ...(to ? { lte: isoToDate(to) } : {}),
+      },
+    },
     include: transactionInclude,
     orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
   });

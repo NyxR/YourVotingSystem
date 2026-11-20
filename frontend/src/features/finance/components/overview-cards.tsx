@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/card';
 import { formatCAD } from '@/lib/money';
 import { formatDay } from '@/lib/dates';
-import { fmt } from '@/i18n/config';
+import { fmt, numberLocale } from '@/i18n/config';
 import { getI18n } from '@/i18n/server';
 import type { DashboardData } from '../queries';
 
@@ -22,7 +22,7 @@ function percentChange(current: number, previous: number): number | null {
 function ChangeBadge({ change, intl }: { change: number | null; intl: string }) {
   if (change === null) return null;
   const Icon = change >= 0 ? TrendingUpIcon : TrendingDownIcon;
-  const text = new Intl.NumberFormat(intl, {
+  const text = new Intl.NumberFormat(numberLocale(intl), {
     style: 'percent',
     maximumFractionDigits: 0,
     signDisplay: 'exceptZero',

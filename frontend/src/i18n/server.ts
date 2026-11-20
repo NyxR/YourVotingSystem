@@ -5,12 +5,13 @@ import { cookies, headers } from 'next/headers';
 import { DEFAULT_LOCALE, INTL_LOCALE, isLocale, LOCALE_COOKIE, type Locale } from './config';
 import en, { type Messages } from './messages/en';
 import fr from './messages/fr';
+import mg from './messages/mg';
 
-const MESSAGES: Record<Locale, Messages> = { en, fr };
+const MESSAGES: Record<Locale, Messages> = { en, fr, mg };
 
 /**
  * The chosen language (cookie), else the browser's preferred one if we
- * support it, else English. Memoised per request.
+ * support it, else French. Memoised per request.
  */
 export const getLocale = cache(async (): Promise<Locale> => {
   const fromCookie = (await cookies()).get(LOCALE_COOKIE)?.value;

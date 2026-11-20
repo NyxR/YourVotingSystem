@@ -1,21 +1,32 @@
 // Shared by server and client code.
 
-export const LOCALES = ['en', 'fr'] as const;
+export const LOCALES = ['en', 'fr', 'mg'] as const;
 export type Locale = (typeof LOCALES)[number];
-export const DEFAULT_LOCALE: Locale = 'en';
+export const DEFAULT_LOCALE: Locale = 'fr';
 
 /** Cookie holding the user's chosen language. */
 export const LOCALE_COOKIE = 'NEXT_LOCALE';
 
-/** BCP-47 tag used for Intl number/date formatting (Canadian variants). */
+/**
+ * BCP-47 tag passed around as `intl` for number/date formatting. Malagasy
+ * dates go through our own month/day names (see formatDate in @/lib/dates),
+ * because many browsers ship without Malagasy data.
+ */
 export const INTL_LOCALE: Record<Locale, string> = {
   en: 'en-CA',
   fr: 'fr-CA',
+  mg: 'mg',
 };
+
+/** Tag for Intl.NumberFormat: Malagasy uses the French style, "1 234,50 $". */
+export function numberLocale(intl: string): string {
+  return intl.startsWith('mg') ? 'fr-CA' : intl;
+}
 
 export const LOCALE_NAMES: Record<Locale, string> = {
   en: 'English',
   fr: 'Français',
+  mg: 'Malagasy',
 };
 
 export function isLocale(value: unknown): value is Locale {

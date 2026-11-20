@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { fmt } from '@/i18n/config';
+import { fmt, numberLocale } from '@/i18n/config';
 import { useI18n } from '@/i18n/client';
 import { APP_TIMEZONE, monthStart } from '@/lib/dates';
 import { MEMBER_TYPE_LABELS, MEMBER_TYPES } from '@/lib/member-types';
@@ -66,9 +66,9 @@ export function MembersStats({ members, today }: { members: MemberRow[]; today: 
     ),
   ];
 
-  const number = (n: number) => new Intl.NumberFormat(intl).format(n);
+  const number = (n: number) => new Intl.NumberFormat(numberLocale(intl)).format(n);
   const percent = (n: number) =>
-    new Intl.NumberFormat(intl, { style: 'percent', maximumFractionDigits: 0 }).format(
+    new Intl.NumberFormat(numberLocale(intl), { style: 'percent', maximumFractionDigits: 0 }).format(
       total ? n / total : 0,
     );
 

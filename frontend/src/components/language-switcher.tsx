@@ -15,7 +15,7 @@ import { useI18n } from '@/i18n/client';
 import { setLocale } from '@/i18n/locale.actions';
 import { cn } from '@/lib/utils';
 
-/** English / Français selector. Saves the choice and re-renders the page. */
+/** English / Français / Malagasy selector. Saves the choice and re-renders the page. */
 export function LanguageSwitcher({ className }: { className?: string }) {
   const { locale, t } = useI18n();
   const router = useRouter();

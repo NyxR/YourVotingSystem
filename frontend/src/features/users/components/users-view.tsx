@@ -11,7 +11,7 @@ import {
   type SortingState,
 } from '@tanstack/react-table';
 import { formatDistanceToNow } from 'date-fns';
-import { enCA, frCA } from 'date-fns/locale';
+import { DATE_FNS_LOCALES } from '@/i18n/date-locale';
 import { toast } from 'sonner';
 import { EllipsisVerticalIcon, FilterXIcon, SearchIcon, UserPlusIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -78,7 +78,7 @@ const STATUS: Record<UserStatus, { label: keyof Messages['users']; dot: string }
 
 export function UsersView({ users, currentUserId }: { users: UserRow[]; currentUserId: string }) {
   const { t, locale } = useI18n();
-  const dateLocale = locale === 'fr' ? frCA : enCA;
+  const dateLocale = DATE_FNS_LOCALES[locale];
   // Pagination is owned here and reset to page 1 from the filter handlers.
   // (TanStack's autoResetPageIndex schedules a state update that can fire
   // before mount, which React warns about.)

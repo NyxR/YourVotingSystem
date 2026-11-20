@@ -36,8 +36,52 @@ export function monthStart(iso: string, offset = 0): string {
   return dateToISO(d);
 }
 
+// Malagasy names (CLDR). Browsers often lack Malagasy locale data, so we
+// substitute them ourselves; server and browser then render the same text.
+export const MG_MONTHS = [
+  'Janoary', 'Febroary', 'Martsa', 'Aprily', 'Mey', 'Jona',
+  'Jolay', 'Aogositra', 'Septambra', 'Oktobra', 'Novambra', 'Desambra',
+];
+export const MG_MONTHS_SHORT = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'Mey', 'Jon', 'Jol', 'Aog', 'Sep', 'Okt', 'Nov', 'Des',
+];
+/** Sunday first, like Date#getDay(). */
+export const MG_WEEKDAYS = [
+  'Alahady', 'Alatsinainy', 'Talata', 'Alarobia', 'Alakamisy', 'Zoma', 'Asabotsy',
+];
+export const MG_WEEKDAYS_SHORT = ['Alah', 'Alats', 'Tal', 'Alar', 'Alak', 'Zom', 'Asab'];
+
+const WEEKDAY_INDEX: Record<string, number> = {
+  Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
+};
+
 /**
- * "2026-11-05" -> "Nov 5, 2026" (en-CA) / "5 nov. 2026" (fr-CA).
+ * Date#toLocaleDateString, plus Malagasy: for `intl` 'mg' the date is laid
+ * out the French way ("19 nov. 2026") with Malagasy month and day names
+ * ("19 Nov 2026", "19 Novambra 2026").
+ */
+export function formatDate(date: Date, intl: string, opts: Intl.DateTimeFormatOptions) {
+  if (!intl.startsWith('mg')) return date.toLocaleDateString(intl, opts);
+  const inZone = (o: Intl.DateTimeFormatOptions) =>
+    new Intl.DateTimeFormat('en-US', { timeZone: opts.timeZone, ...o }).format(date);
+  return new Intl.DateTimeFormat('fr-FR', opts)
+    .formatToParts(date)
+    .map((part) => {
+      if (part.type === 'month' && opts.month && opts.month !== 'numeric' && opts.month !== '2-digit') {
+        const m = Number(inZone({ month: 'numeric' })) - 1;
+        return opts.month === 'long' ? MG_MONTHS[m] : MG_MONTHS_SHORT[m];
+      }
+      if (part.type === 'weekday') {
+        const d = WEEKDAY_INDEX[inZone({ weekday: 'short' })];
+        return opts.weekday === 'long' ? MG_WEEKDAYS[d] : MG_WEEKDAYS_SHORT[d];
+      }
+      return part.value;
+    })
+    .join('');
+}
+
+/**
+ * "2026-11-05" -> "Nov 5, 2026" (en-CA) / "5 nov. 2026" (fr-CA) / "5 Nov 2026" (mg).
  * Rendered in UTC so the calendar day never shifts.
  */
 export function formatDay(
@@ -45,7 +89,7 @@ export function formatDay(
   opts: Intl.DateTimeFormatOptions = {},
   intl = 'en-CA',
 ) {
-  return isoToDate(iso).toLocaleDateString(intl, {
+  return formatDate(isoToDate(iso), intl, {
     timeZone: 'UTC',
     month: 'short',
     day: 'numeric',

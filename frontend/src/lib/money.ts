@@ -1,5 +1,7 @@
 // Money is stored as integer CAD cents. `intl` is a BCP-47 tag such as
-// 'en-CA' or 'fr-CA' (see INTL_LOCALE in @/i18n/config).
+// 'en-CA', 'fr-CA' or 'mg' (see INTL_LOCALE in @/i18n/config).
+
+import { numberLocale } from '@/i18n/config';
 
 const formatters = new Map<string, Intl.NumberFormat>();
 
@@ -7,7 +9,7 @@ function formatter(intl: string, compact: boolean) {
   const key = `${intl}|${compact}`;
   let f = formatters.get(key);
   if (!f) {
-    f = new Intl.NumberFormat(intl, {
+    f = new Intl.NumberFormat(numberLocale(intl), {
       style: 'currency',
       currency: 'CAD',
       ...(compact ? { notation: 'compact', maximumFractionDigits: 1 } : {}),
@@ -28,10 +30,10 @@ export const formatCADCompact = (cents: number, intl = 'en-CA') =>
 /** Plain decimal string for inputs and CSV, e.g. 12550 -> "125.50". */
 export const centsToDecimal = (cents: number) => (cents / 100).toFixed(2);
 
-/** Like centsToDecimal, with a decimal comma for French: "125,50". */
+/** Like centsToDecimal, with a decimal comma for French/Malagasy: "125,50". */
 export const centsToInput = (cents: number, intl = 'en-CA') => {
   const s = centsToDecimal(cents);
-  return intl.startsWith('fr') ? s.replace('.', ',') : s;
+  return numberLocale(intl).startsWith('fr') ? s.replace('.', ',') : s;
 };
 
 const MAX_CENTS = 2_000_000_000; // fits a Postgres INTEGER with margin

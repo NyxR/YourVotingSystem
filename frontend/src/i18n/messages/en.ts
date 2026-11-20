@@ -1,4 +1,4 @@
-// English UI strings. `fr.ts` must provide the same keys (enforced by the
+// English UI strings. `fr.ts` and `mg.ts` must provide the same keys (enforced by the
 // `Messages` type). Placeholders like {name} are filled with `fmt()`.
 
 const en = {
@@ -242,6 +242,7 @@ const en = {
     expensesFilter: 'Expenses',
     net: 'Net',
     resetFilters: 'Reset filters',
+    allTime: 'All time',
     exportCsv: 'Export CSV',
     nothingToExport: 'Nothing to export with the current filters.',
     colDate: 'Date',

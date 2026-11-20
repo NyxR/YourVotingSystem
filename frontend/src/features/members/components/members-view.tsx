@@ -32,7 +32,7 @@ import {
 } from '@/lib/responsibilities';
 import { useI18n } from '@/i18n/client';
 import { MEMBER_TYPE_LABELS, MEMBER_TYPES } from '@/lib/member-types';
-import { APP_TIMEZONE } from '@/lib/dates';
+import { APP_TIMEZONE, formatDate } from '@/lib/dates';
 import type { MemberRow } from '../queries';
 
 const ALL = 'all';
@@ -52,7 +52,7 @@ function matchesSearch(text: string, phone: string | null | undefined, query: st
 function DateCell({ iso, intl }: { iso: string; intl: string }) {
   return (
     <span className='whitespace-nowrap text-muted-foreground'>
-      {new Date(iso).toLocaleDateString(intl, {
+      {formatDate(new Date(iso), intl, {
         timeZone: APP_TIMEZONE,
         year: 'numeric',
         month: 'short',

@@ -249,6 +249,7 @@ const fr: Messages = {
     expensesFilter: 'Dépenses',
     net: 'Net',
     resetFilters: 'Réinitialiser les filtres',
+    allTime: 'Toutes les dates',
     exportCsv: 'Exporter en CSV',
     nothingToExport: 'Rien à exporter avec les filtres actuels.',
     colDate: 'Date',
