@@ -2,6 +2,8 @@
 
 One-time steps to get the finance dashboard, login and user management running.
 
+To put the app online, see [DEPLOY.md](DEPLOY.md).
+
 ## 1. Apply the database migration
 
 Adds the `Category` and `Transaction` tables and links `User` to Supabase Auth
@@ -13,7 +15,7 @@ npm run db:migrate        # = prisma migrate deploy (uses DIRECT_URL)
 
 ## 2. Run the setup script
 
-Creates the private `receipts` and `forum` storage buckets, seeds default categories, and
+Creates the private `receipts`, `forum` and `avatars` storage buckets, seeds default categories, and
 creates your first admin login:
 
 ```bash
