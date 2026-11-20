@@ -1,5 +1,7 @@
 // Shared by server and client code. Mirrors the Responsibility enum in schema.prisma.
-// Informational flags only: they never affect what a user can do in the app.
+// Diakona/Birao open their forum topics, and only Birao may be Admin or Treasurer.
+
+import type { MemberType } from '@/lib/member-types';
 
 export const RESPONSIBILITIES = ['BIRAO', 'DIAKONA', 'MPIARA_MIVAVAKA'] as const;
 export type Responsibility = (typeof RESPONSIBILITIES)[number];
@@ -25,4 +27,17 @@ export const RESPONSIBILITY_LABELS: Record<Responsibility, string> = {
  */
 export function normalizeResponsibilities(values: readonly Responsibility[]): Responsibility[] {
   return RESPONSIBILITIES.filter((r) => r === ALWAYS_RESPONSIBILITY || values.includes(r));
+}
+
+/**
+ * The ladder Mpandray → Diakona → Birao: Diakona must be Mpandray, and Birao
+ * must also be Diakona. Returns the broken rule (a validation key), or null.
+ */
+export function responsibilityProblem(
+  memberType: MemberType,
+  values: readonly Responsibility[],
+): 'diakonaNeedsMpandray' | 'biraoNeedsDiakona' | null {
+  if (values.includes('DIAKONA') && memberType !== 'MPANDRAY') return 'diakonaNeedsMpandray';
+  if (values.includes('BIRAO') && !values.includes('DIAKONA')) return 'biraoNeedsDiakona';
+  return null;
 }

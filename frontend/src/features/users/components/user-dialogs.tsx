@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import {
   Controller,
   useForm,
+  useWatch,
   type Control,
   type FieldValues,
   type Path,
@@ -35,8 +36,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ROLES, type Role } from "@/lib/roles";
-import { MEMBER_TYPE_LABELS, MEMBER_TYPES } from "@/lib/member-types";
+import { isManager, ROLES, type Role } from "@/lib/roles";
+import {
+  MEMBER_TYPE_LABELS,
+  MEMBER_TYPES,
+  type MemberType,
+} from "@/lib/member-types";
 import { formatPhone, isValidPhone } from "@/lib/phone";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -61,17 +66,20 @@ import {
 function RoleField<T extends FieldValues>({
   control,
   name,
+  birao,
 }: {
   control: Control<T>;
   name: Path<T>;
+  /** Whether Birao is ticked; Admin and Treasurer need it. */
+  birao: boolean;
 }) {
   const { t } = useI18n();
   return (
     <Controller
       control={control}
       name={name}
-      render={({ field }) => (
-        <Field>
+      render={({ field, fieldState }) => (
+        <Field data-invalid={fieldState.invalid}>
           <FieldLabel htmlFor="user-role">{t.users.role}</FieldLabel>
           <Select value={field.value} onValueChange={field.onChange}>
             <SelectTrigger id="user-role" className="w-full">
@@ -79,7 +87,11 @@ function RoleField<T extends FieldValues>({
             </SelectTrigger>
             <SelectContent>
               {ROLES.map((r) => (
-                <SelectItem key={r} value={r}>
+                <SelectItem
+                  key={r}
+                  value={r}
+                  disabled={!birao && isManager(r) && r !== field.value}
+                >
                   {t.roles[r]}
                 </SelectItem>
               ))}
@@ -87,46 +99,108 @@ function RoleField<T extends FieldValues>({
           </Select>
           <FieldDescription>
             {t.roleDescriptions[field.value as Role]}
+            {!birao && <> {t.users.managerNeedsBiraoHint}</>}
           </FieldDescription>
+          {fieldState.invalid && (
+            <FieldError errors={tErrors(t, fieldState.error)} />
+          )}
         </Field>
       )}
     />
   );
 }
 
-/** Any combination of responsibilities (checkboxes). Informational only. */
+/** My profile: the user's responsibilities, shown but not editable. */
+export function ResponsibilitiesReadOnly({ value }: { value: Responsibility[] }) {
+  const { t } = useI18n();
+  return (
+    <Field data-disabled>
+      <FieldLabel>{t.users.responsibilities}</FieldLabel>
+      <div className="flex flex-wrap gap-x-5 gap-y-2">
+        {RESPONSIBILITIES.map((r) => (
+          <div key={r} className="flex items-center gap-2">
+            <Checkbox
+              id={`my-resp-${r}`}
+              checked={r === ALWAYS_RESPONSIBILITY || value.includes(r)}
+              disabled
+            />
+            <Label htmlFor={`my-resp-${r}`} className="font-normal">
+              {RESPONSIBILITY_LABELS[r]}
+            </Label>
+          </div>
+        ))}
+      </div>
+      <FieldDescription>{t.users.responsibilitiesAdminOnly}</FieldDescription>
+    </Field>
+  );
+}
+
+/**
+ * Responsibilities (checkboxes), following the ladder Mpandray → Diakona →
+ * Birao: a step can only be ticked once the one below holds, and can't be
+ * unticked while the one above is ticked (or while the role needs Birao).
+ */
 export function ResponsibilitiesField<T extends FieldValues>({
   control,
   name,
+  memberType,
+  lockBirao = false,
 }: {
   control: Control<T>;
   name: Path<T>;
+  memberType: MemberType;
+  /** The role is Admin/Treasurer, so Birao can't be removed. */
+  lockBirao?: boolean;
 }) {
   const { t } = useI18n();
   return (
     <Controller
       control={control}
       name={name}
-      render={({ field }) => {
+      render={({ field, fieldState }) => {
         const value = (field.value ?? []) as Responsibility[];
         const toggle = (r: Responsibility, on: boolean) =>
           field.onChange(on ? [...value, r] : value.filter((v) => v !== r));
+
+        /** Why this box can't be changed right now, if it can't. */
+        const reason = (r: Responsibility): string | null => {
+          const on = value.includes(r);
+          if (r === ALWAYS_RESPONSIBILITY) return t.users.alwaysResponsibility;
+          if (r === "DIAKONA") {
+            if (!on && memberType !== "MPANDRAY") return t.users.diakonaNeedsMpandrayHint;
+            if (on && value.includes("BIRAO")) return t.users.diakonaLockedByBirao;
+          }
+          if (r === "BIRAO") {
+            if (!on && !value.includes("DIAKONA")) return t.users.biraoNeedsDiakonaHint;
+            if (on && lockBirao) return t.users.biraoLockedByRole;
+          }
+          return null;
+        };
+        const notes = [
+          ...new Set(
+            RESPONSIBILITIES.filter((r) => r !== ALWAYS_RESPONSIBILITY)
+              .map(reason)
+              .filter((n): n is string => !!n),
+          ),
+        ];
+
         return (
-          <Field>
+          <Field data-invalid={fieldState.invalid}>
             <FieldLabel>{t.users.responsibilities}</FieldLabel>
             <div className="flex flex-wrap gap-x-5 gap-y-2">
               {RESPONSIBILITIES.map((r) => {
-                const locked = r === ALWAYS_RESPONSIBILITY;
+                const always = r === ALWAYS_RESPONSIBILITY;
+                const why = reason(r);
                 return (
                   <div
                     key={r}
                     className="flex items-center gap-2"
-                    title={locked ? t.users.alwaysResponsibility : undefined}
+                    title={why ?? undefined}
                   >
                     <Checkbox
                       id={`resp-${r}`}
-                      checked={locked || value.includes(r)}
-                      disabled={locked}
+                      checked={always || value.includes(r)}
+                      disabled={!!why}
                       onCheckedChange={(on) => toggle(r, on === true)}
                     />
                     <Label htmlFor={`resp-${r}`} className="font-normal">
@@ -138,7 +212,13 @@ export function ResponsibilitiesField<T extends FieldValues>({
             </div>
             <FieldDescription>
               {t.users.alwaysResponsibility} {t.users.responsibilitiesHint}
+              {notes.map((n) => (
+                <span key={n}> {n}</span>
+              ))}
             </FieldDescription>
+            {fieldState.invalid && (
+              <FieldError errors={tErrors(t, fieldState.error)} />
+            )}
           </Field>
         );
       }}
@@ -191,9 +271,12 @@ export function PhoneField<T extends FieldValues>({
 function MemberTypeField<T extends FieldValues>({
   control,
   name,
+  diakona,
 }: {
   control: Control<T>;
   name: Path<T>;
+  /** Diakona is ticked, so the person must stay Mpandray. */
+  diakona: boolean;
 }) {
   const { t } = useI18n();
   return (
@@ -211,12 +294,19 @@ function MemberTypeField<T extends FieldValues>({
             </SelectTrigger>
             <SelectContent>
               {MEMBER_TYPES.map((m) => (
-                <SelectItem key={m} value={m}>
+                <SelectItem
+                  key={m}
+                  value={m}
+                  disabled={diakona && m !== "MPANDRAY" && m !== field.value}
+                >
                   {MEMBER_TYPE_LABELS[m]}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
+          {diakona && field.value === "MPANDRAY" && (
+            <FieldDescription>{t.users.mpandrayLockedByDiakona}</FieldDescription>
+          )}
         </Field>
       )}
     />
@@ -286,6 +376,11 @@ export function InviteUserDialog({
     }
   }, [open, form]);
 
+  const watchedRole = useWatch({ control: form.control, name: "role" });
+  const watchedType = useWatch({ control: form.control, name: "memberType" });
+  const watchedResp =
+    useWatch({ control: form.control, name: "responsibilities" }) ?? [];
+
   const onSubmit = async (values: TInviteUser) => {
     const result = await inviteUser(values);
     if (result.success) {
@@ -326,13 +421,23 @@ export function InviteUserDialog({
                 </Field>
               )}
             />
-            <MemberTypeField control={form.control} name="memberType" />
+            <MemberTypeField
+              control={form.control}
+              name="memberType"
+              diakona={watchedResp.includes("DIAKONA")}
+            />
             <ResponsibilitiesField
               control={form.control}
               name="responsibilities"
+              memberType={watchedType}
+              lockBirao={isManager(watchedRole)}
             />
             <PhoneField control={form.control} name="phone" />
-            <RoleField control={form.control} name="role" />
+            <RoleField
+              control={form.control}
+              name="role"
+              birao={watchedResp.includes("BIRAO")}
+            />
           </FieldGroup>
         </form>
         <DialogFooter>
@@ -385,6 +490,11 @@ export function EditUserDialog({
     }
   }, [user, form]);
 
+  const watchedRole = useWatch({ control: form.control, name: "role" });
+  const watchedType = useWatch({ control: form.control, name: "memberType" });
+  const watchedResp =
+    useWatch({ control: form.control, name: "responsibilities" }) ?? [];
+
   const onSubmit = async (values: TUpdateUser) => {
     if (!user) return;
     const result = await updateUser(user.id, values);
@@ -406,13 +516,23 @@ export function EditUserDialog({
         <form id="edit-user-form" onSubmit={form.handleSubmit(onSubmit)}>
           <FieldGroup>
             <NameField control={form.control} name="username" />
-            <MemberTypeField control={form.control} name="memberType" />
+            <MemberTypeField
+              control={form.control}
+              name="memberType"
+              diakona={watchedResp.includes("DIAKONA")}
+            />
             <ResponsibilitiesField
               control={form.control}
               name="responsibilities"
+              memberType={watchedType}
+              lockBirao={isManager(watchedRole)}
             />
             <PhoneField control={form.control} name="phone" />
-            <RoleField control={form.control} name="role" />
+            <RoleField
+              control={form.control}
+              name="role"
+              birao={watchedResp.includes("BIRAO")}
+            />
           </FieldGroup>
         </form>
         <DialogFooter>
