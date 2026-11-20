@@ -133,6 +133,15 @@ export function UsersView({ users, currentUserId }: { users: UserRow[]; currentU
         ),
       },
       {
+        accessorKey: 'memberType',
+        header: ({ column }) => <SortableHeader column={column} title={t.members.colType} />,
+        cell: ({ row }) => (
+          <Badge variant={row.original.memberType === 'MPANDRAY' ? 'default' : 'outline'}>
+            {MEMBER_TYPE_LABELS[row.original.memberType]}
+          </Badge>
+        ),
+      },
+      {
         id: 'phone',
         header: t.users.colPhone,
         cell: ({ row }) => <PhoneLink phone={row.original.phone} name={row.original.username} />,
