@@ -85,6 +85,9 @@ const fr: Messages = {
   },
 
   validation: {
+    avatarType: 'Les photos doivent être en JPG, PNG ou WebP.',
+    avatarSourceSize: 'Les photos doivent faire 5 Mo ou moins.',
+    avatarSize: 'La photo recadrée est trop lourde.',
     diakonaNeedsMpandray: 'Seul un Mpandray peut être Diakona.',
     biraoNeedsDiakona: 'Seul un Diakona peut être Birao.',
     managerNeedsBirao: 'Seul un Birao peut être administrateur ou trésorier.',
@@ -114,6 +117,7 @@ const fr: Messages = {
   },
 
   errors: {
+    avatarUpload: 'Impossible d’enregistrer la photo de profil.',
     notSignedIn: 'Vous n’êtes pas connecté.',
     forbidden: 'Vous n’avez pas la permission d’effectuer cette action.',
     transactionSave: 'Impossible d’enregistrer la transaction.',
@@ -372,6 +376,15 @@ const fr: Messages = {
   },
 
   profile: {
+    addAvatar: 'Ajouter une photo',
+    changeAvatar: 'Changer la photo',
+    removeAvatar: 'Retirer',
+    avatarHint: 'JPG, PNG ou WebP, 5 Mo maximum. Sans photo, vos initiales sont affichées.',
+    avatarSaved: 'Photo de profil mise à jour',
+    avatarRemoved: 'Photo de profil retirée',
+    cropTitle: 'Cadrez votre photo',
+    cropDescription: 'Faites glisser pour déplacer et utilisez le curseur pour zoomer.',
+    zoom: 'Zoom',
     title: 'Mon profil',
     description: 'Votre numéro est visible par les administrateurs et les trésoriers.',
     saved: 'Profil enregistré',

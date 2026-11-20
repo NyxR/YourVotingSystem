@@ -63,6 +63,7 @@ export function TopicView({
   categories,
   currentUserId,
   currentUserName,
+  currentUserAvatar,
   canModerate,
 }: {
   topic: TopicDetail;
@@ -70,6 +71,7 @@ export function TopicView({
   categories: ForumCategoryItem[];
   currentUserId: string;
   currentUserName: string;
+  currentUserAvatar: string | null;
   canModerate: boolean;
 }) {
   const { t } = useI18n();
@@ -83,8 +85,8 @@ export function TopicView({
 
   // ── Live updates ──
   const me = useMemo(
-    () => ({ id: currentUserId, name: currentUserName }),
-    [currentUserId, currentUserName],
+    () => ({ id: currentUserId, name: currentUserName, avatarUrl: currentUserAvatar }),
+    [currentUserId, currentUserName, currentUserAvatar],
   );
   const deletingSelf = useRef(false);
   const { viewers, typing, notifyTyping, clearTyping } = useTopicRealtime({
@@ -378,7 +380,7 @@ function PostHeader({ post }: { post: Post }) {
   const name = post.author?.name ?? null;
   return (
     <div className='flex items-center gap-2'>
-      <PersonAvatar name={name} />
+      <PersonAvatar name={name} src={post.author?.avatarUrl} />
       <div className='flex min-w-0 flex-col text-sm leading-tight'>
         <span className='truncate font-medium'>{name ?? t.common.removedUser}</span>
         <span className='text-xs text-muted-foreground'>
@@ -666,6 +668,7 @@ function ViewersBar({ viewers }: { viewers: Viewer[] }) {
           <PersonAvatar
             key={v.id}
             name={v.name}
+            src={v.avatarUrl}
             className='size-6 text-[10px] ring-2 ring-background'
           />
         ))}

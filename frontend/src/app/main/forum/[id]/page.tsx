@@ -27,6 +27,7 @@ export default async function TopicPage({ params }: Params) {
       categories={categories}
       currentUserId={user.id}
       currentUserName={user.username}
+      currentUserAvatar={user.avatarUrl}
       canModerate={canModerate(user)}
     />
   );

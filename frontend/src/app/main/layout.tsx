@@ -31,6 +31,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
           memberType: user.memberType,
           phone: user.phone,
           responsibilities: user.responsibilities,
+          avatarUrl: user.avatarUrl,
         }}
       />
       <SidebarInset>

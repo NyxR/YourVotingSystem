@@ -65,7 +65,7 @@ export type ForumCategoryItem = {
   topicCount: number;
 };
 
-export type Person = { id: string; name: string } | null;
+export type Person = { id: string; name: string; avatarUrl: string | null } | null;
 
 export type TopicListItem = {
   id: string;

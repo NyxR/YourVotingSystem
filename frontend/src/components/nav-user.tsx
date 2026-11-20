@@ -28,7 +28,7 @@ import { useI18n } from "@/i18n/client";
 import { MEMBER_TYPE_LABELS } from "@/lib/member-types";
 import { ResponsibilityBadges } from "@/components/responsibility-badges";
 import type { SidebarUser } from "./app-sidebar";
-import { initials } from "@/lib/initials";
+import { UserAvatar } from "@/components/user-avatar";
 
 
 function UserSummary({
@@ -41,12 +41,7 @@ function UserSummary({
   const { t } = useI18n();
   return (
     <>
-      <span
-        aria-hidden
-        className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold tracking-wide text-primary-foreground"
-      >
-        {initials(user.name)}
-      </span>
+      <UserAvatar name={user.name} src={user.avatarUrl} />
       <div className="grid flex-1 text-left text-sm leading-tight">
         <span className="truncate font-medium">{user.name}</span>
         <span className="truncate text-xs text-muted-foreground">
@@ -123,6 +118,7 @@ export function NavUser({ user }: { user: SidebarUser }) {
           email: user.email,
           phone: user.phone,
           responsibilities: user.responsibilities,
+          avatarUrl: user.avatarUrl,
         }}
       />
     </>

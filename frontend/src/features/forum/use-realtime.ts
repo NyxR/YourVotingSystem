@@ -94,7 +94,7 @@ export function useOnForumActivity(fn: () => void) {
   }, [debounced]);
 }
 
-export type Viewer = { id: string; name: string };
+export type Viewer = { id: string; name: string; avatarUrl?: string | null };
 
 const TYPING_TTL_MS = 4000;
 const TYPING_THROTTLE_MS = 2000;
@@ -135,12 +135,13 @@ export function useTopicRealtime({
           const unique = new Map<string, Viewer>();
           for (const entries of Object.values(ch.presenceState<Viewer>())) {
             for (const v of entries)
-              if (v.id && v.id !== me.id) unique.set(v.id, { id: v.id, name: v.name });
+              if (v.id && v.id !== me.id)
+                unique.set(v.id, { id: v.id, name: v.name, avatarUrl: v.avatarUrl ?? null });
           }
           setViewers([...unique.values()].sort((a, b) => a.name.localeCompare(b.name)));
         });
     },
-    (ch) => void ch.track({ id: me.id, name: me.name }),
+    (ch) => void ch.track({ id: me.id, name: me.name, avatarUrl: me.avatarUrl ?? null }),
   );
 
   // Typing entries expire a few seconds after the last signal.
@@ -161,7 +162,11 @@ export function useTopicRealtime({
     const now = Date.now();
     if (!channel || now - lastTypingSent.current < TYPING_THROTTLE_MS) return;
     lastTypingSent.current = now;
-    void channel.send({ type: 'broadcast', event: EVENTS.typing, payload: me });
+    void channel.send({
+      type: 'broadcast',
+      event: EVENTS.typing,
+      payload: { id: me.id, name: me.name },
+    });
   }, [channel, me]);
 
   /** Someone who posted is no longer "typing". */

@@ -8,6 +8,7 @@ import { normalizeResponsibilities, type Responsibility } from '@/lib/responsibi
 import { getI18n } from '@/i18n/server';
 import type { Messages } from '@/i18n/messages/en';
 import { HOME_PATH } from '@/lib/app';
+import { avatarUrl } from '@/lib/avatar';
 
 export type CurrentUser = {
   id: string;
@@ -18,6 +19,8 @@ export type CurrentUser = {
   memberType: MemberType;
   phone: string | null;
   responsibilities: Responsibility[];
+  /** Profile picture URL, or null (initials are shown). */
+  avatarUrl: string | null;
 };
 
 export const can = {
@@ -76,6 +79,7 @@ export async function findProfileForAuthUser(user: {
     memberType: profile.memberType,
     phone: profile.phone,
     responsibilities: normalizeResponsibilities(profile.responsibilities),
+    avatarUrl: avatarUrl(profile.avatarPath),
   };
 }
 

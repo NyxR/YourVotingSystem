@@ -84,6 +84,9 @@ const en = {
 
   /** Validation messages; schemas use these keys as their error messages. */
   validation: {
+    avatarType: 'Pictures must be JPG, PNG or WebP.',
+    avatarSourceSize: 'Pictures must be 5 MB or smaller.',
+    avatarSize: 'The cropped picture is too large.',
     diakonaNeedsMpandray: 'Only a Mpandray can be Diakona.',
     biraoNeedsDiakona: 'Only a Diakona can be Birao.',
     managerNeedsBirao: 'Only Birao can be Admin or Treasurer.',
@@ -113,6 +116,7 @@ const en = {
   },
 
   errors: {
+    avatarUpload: 'Could not save the profile picture.',
     notSignedIn: 'You are not signed in.',
     forbidden: 'You do not have permission to do this.',
     transactionSave: 'Failed to save the transaction.',
@@ -363,6 +367,15 @@ const en = {
   },
 
   profile: {
+    addAvatar: 'Add a picture',
+    changeAvatar: 'Change picture',
+    removeAvatar: 'Remove',
+    avatarHint: 'JPG, PNG or WebP, up to 5 MB. Without a picture, your initials are shown.',
+    avatarSaved: 'Profile picture updated',
+    avatarRemoved: 'Profile picture removed',
+    cropTitle: 'Frame your picture',
+    cropDescription: 'Drag to move and use the slider to zoom.',
+    zoom: 'Zoom',
     title: 'My profile',
     description: 'Your contact number is visible to admins and treasurers.',
     saved: 'Profile saved',

@@ -44,6 +44,8 @@ try {
   const wanted = {
     receipts: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
     forum: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
+    // Cropped in the browser to a small square before upload.
+    avatars: ['image/webp', 'image/jpeg'],
   };
   for (const [name, allowedMimeTypes] of Object.entries(wanted)) {
     if (buckets.some((b) => b.name === name)) {

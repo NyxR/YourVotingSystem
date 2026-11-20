@@ -21,15 +21,17 @@ import type { Responsibility } from '@/lib/responsibilities';
 import { updateMyProfile } from '../actions/user.actions';
 import { profileSchema, type TProfile } from '../schemas/user.schema';
 import { PhoneField, ResponsibilitiesReadOnly } from './user-dialogs';
+import { AvatarPicker } from './avatar-picker';
 
 type Me = {
   name: string;
   email: string;
   phone: string | null;
   responsibilities: Responsibility[];
+  avatarUrl: string | null;
 };
 
-/** Lets the signed-in user update their own contact number. */
+/** Lets the signed-in user update their own picture and contact number. */
 export function ProfileDialog({
   open,
   onOpenChange,
@@ -76,6 +78,7 @@ function ProfileForm({ me, onDone }: { me: Me; onDone: () => void }) {
       </DialogHeader>
       <form id='profile-form' onSubmit={form.handleSubmit(onSubmit)}>
         <FieldGroup>
+          <AvatarPicker name={me.name} src={me.avatarUrl} />
           <Field>
             <FieldLabel htmlFor='profile-name'>{t.users.fullName}</FieldLabel>
             <Input id='profile-name' value={me.name} readOnly disabled />

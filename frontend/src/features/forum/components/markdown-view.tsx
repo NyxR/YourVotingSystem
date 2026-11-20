@@ -66,8 +66,15 @@ const components: Components = {
         </a>
       ) : null;
     }
+    // Each image is its own centered block (an <a> styled as a block, since
+    // a <div> isn't allowed inside the surrounding <p>).
     return (
-      <a href={url} target='_blank' rel='noopener noreferrer' className='inline-block'>
+      <a
+        href={url}
+        target='_blank'
+        rel='noopener noreferrer'
+        className='mx-auto my-2 block w-fit max-w-full first:mt-0 last:mb-0'
+      >
         {/* eslint-disable-next-line @next/next/no-img-element -- access-checked redirect, not optimizable */}
         <img
           src={url}

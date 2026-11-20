@@ -37,6 +37,7 @@ export type SidebarUser = {
   memberType: MemberType;
   phone: string | null;
   responsibilities: Responsibility[];
+  avatarUrl: string | null;
 };
 
 /**

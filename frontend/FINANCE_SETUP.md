@@ -39,6 +39,9 @@ links work in any browser. Replace the link in each template:
 
 The default templates also work, through a client-side fallback at `/auth/callback`.
 
+A ready-made, branded French invite email (subject line included) is in
+`email-templates/invite.html`; paste it into the "Invite user" template.
+
 **SMTP**: Supabase's built-in email service only sends a few emails per hour.
 For real use, set up custom SMTP under **Project Settings → Authentication → SMTP**.
 

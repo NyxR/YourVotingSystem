@@ -6,13 +6,16 @@ import type { CurrentUser } from '@/lib/auth';
 import { canEditPost, visibleTo } from './access';
 import { toForumColor } from './colors';
 import type { CommentItem, ForumCategoryItem, Person, TopicDetail, TopicListItem } from './schemas';
+import { avatarUrl } from '@/lib/avatar';
 
 type Viewer = Pick<CurrentUser, 'id' | 'role' | 'responsibilities'>;
 
 export const TOPICS_PER_PAGE = 25;
 
-const person = (u: { id: string; username: string } | null): Person =>
-  u ? { id: u.id, name: u.username } : null;
+const person = (u: { id: string; username: string; avatarPath: string | null } | null): Person =>
+  u ? { id: u.id, name: u.username, avatarUrl: avatarUrl(u.avatarPath) } : null;
+
+const personSelect = { id: true, username: true, avatarPath: true } as const;
 
 const categorySelect = {
   id: true,
@@ -91,7 +94,7 @@ export async function getTopics(
       take: TOPICS_PER_PAGE,
       include: {
         category: { select: categorySelect },
-        author: { select: { id: true, username: true } },
+        author: { select: personSelect },
         reads: { where: { userId: user.id }, select: { lastReadAt: true } },
         _count: { select: { likes: true } },
       },
@@ -150,14 +153,14 @@ export async function getTopic(user: Viewer, id: string): Promise<TopicDetail | 
     where: { id },
     include: {
       category: { select: categorySelect },
-      author: { select: { id: true, username: true } },
+      author: { select: personSelect },
       reads: { where: { userId: user.id }, select: { lastReadAt: true } },
       likes: { where: { userId: user.id }, select: { id: true } },
       _count: { select: { likes: true } },
       comments: {
         orderBy: { createdAt: 'asc' },
         include: {
-          author: { select: { id: true, username: true } },
+          author: { select: personSelect },
           replyTo: {
             select: { id: true, author: { select: { username: true } } },
           },

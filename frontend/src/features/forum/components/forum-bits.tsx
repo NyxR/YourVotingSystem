@@ -5,7 +5,7 @@ import { LockKeyholeIcon } from 'lucide-react';
 import { useI18n } from '@/i18n/client';
 import { DATE_FNS_LOCALES } from '@/i18n/date-locale';
 import { formatDate } from '@/lib/dates';
-import { initials } from '@/lib/initials';
+import { UserAvatar } from '@/components/user-avatar';
 import { cn } from '@/lib/utils';
 import { COLOR_BADGE, COLOR_DOT } from '../colors';
 import type { ForumCategoryItem } from '../schemas';
@@ -43,19 +43,16 @@ export function CategoryBadge({
   );
 }
 
-export function PersonAvatar({ name, className }: { name: string | null; className?: string }) {
-  return (
-    <span
-      aria-hidden
-      className={cn(
-        'flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground',
-        !name && 'bg-muted text-muted-foreground',
-        className,
-      )}
-    >
-      {name ? initials(name) : '?'}
-    </span>
-  );
+export function PersonAvatar({
+  name,
+  src,
+  className,
+}: {
+  name: string | null;
+  src?: string | null;
+  className?: string;
+}) {
+  return <UserAvatar name={name} src={src} className={className} />;
 }
 
 /** "3 hours ago", with the full date on hover. */

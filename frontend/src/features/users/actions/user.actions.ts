@@ -3,7 +3,8 @@
 import { revalidatePath } from 'next/cache';
 import prisma from '@/lib/prisma';
 import { authorize, can, runAction, type ActionResult } from '@/lib/auth';
-import { createAdminClient } from '@/lib/supabase/admin';
+import { AVATARS_BUCKET, createAdminClient } from '@/lib/supabase/admin';
+import { AVATAR_UPLOAD_MAX_BYTES, AVATAR_UPLOAD_TYPES } from '@/lib/avatar';
 import { getSiteUrl } from '@/lib/site-url';
 import { getI18n } from '@/i18n/server';
 import { translateValidation } from '@/i18n/validation';
@@ -200,6 +201,70 @@ export async function deleteUser(userId: string): Promise<ActionResult> {
     }
     // Their transactions stay; "recorded by" becomes empty (FK SET NULL).
     await prisma.user.delete({ where: { id: userId } });
+    await removeAvatarFile(target.avatarPath);
     revalidatePath('/main/users');
   }, 'userDelete');
+}
+
+// ─── Profile picture (each person, for themselves only) ──────────
+
+/** Best effort: a leftover file is harmless, a failed save is not. */
+async function removeAvatarFile(path: string | null) {
+  if (!path) return;
+  const { error } = await createAdminClient().storage.from(AVATARS_BUCKET).remove([path]);
+  if (error) console.error('Avatar cleanup failed', error);
+}
+
+/** Saves the signed-in user's (already cropped) profile picture. */
+export async function uploadMyAvatar(formData: FormData): Promise<ActionResult> {
+  return runAction(async () => {
+    const me = await authorize();
+    const file = formData.get('file');
+    const type = file instanceof File ? file.type : '';
+    if (
+      !(file instanceof File) ||
+      file.size === 0 ||
+      !(AVATAR_UPLOAD_TYPES as readonly string[]).includes(type)
+    ) {
+      return invalid('avatarType');
+    }
+    if (file.size > AVATAR_UPLOAD_MAX_BYTES) return invalid('avatarSize');
+
+    const path = `${me.id}-${crypto.randomUUID()}.${type === 'image/webp' ? 'webp' : 'jpg'}`;
+    const { error } = await createAdminClient()
+      .storage.from(AVATARS_BUCKET)
+      .upload(path, file, { contentType: type });
+    if (error) {
+      console.error('Avatar upload failed', error);
+      return fail('avatarUpload');
+    }
+
+    const before = await prisma.user.findUnique({
+      where: { id: me.id },
+      select: { avatarPath: true },
+    });
+    try {
+      await prisma.user.update({ where: { id: me.id }, data: { avatarPath: path } });
+    } catch (dbError) {
+      await removeAvatarFile(path);
+      throw dbError;
+    }
+    await removeAvatarFile(before?.avatarPath ?? null);
+    revalidatePath('/main', 'layout');
+  }, 'avatarUpload');
+}
+
+/** Goes back to initials. */
+export async function removeMyAvatar(): Promise<ActionResult> {
+  return runAction(async () => {
+    const me = await authorize();
+    const before = await prisma.user.findUnique({
+      where: { id: me.id },
+      select: { avatarPath: true },
+    });
+    if (!before?.avatarPath) return;
+    await prisma.user.update({ where: { id: me.id }, data: { avatarPath: null } });
+    await removeAvatarFile(before.avatarPath);
+    revalidatePath('/main', 'layout');
+  }, 'avatarUpload');
 }

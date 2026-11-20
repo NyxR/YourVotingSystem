@@ -85,6 +85,9 @@ const mg: Messages = {
   },
 
   validation: {
+    avatarType: 'Tsy maintsy JPG, PNG na WebP ny sary.',
+    avatarSourceSize: 'Tsy tokony hihoatra ny 5 Mo ny sary.',
+    avatarSize: 'Lehibe loatra ilay sary voatapaka.',
     diakonaNeedsMpandray: 'Ny Mpandray ihany no afaka ho Diakona.',
     biraoNeedsDiakona: 'Ny Diakona ihany no afaka ho Birao.',
     managerNeedsBirao: 'Ny Birao ihany no afaka ho mpitantana na mpitahiry vola.',
@@ -114,6 +117,7 @@ const mg: Messages = {
   },
 
   errors: {
+    avatarUpload: 'Tsy voatahiry ny sarin’ny mombamomba.',
     notSignedIn: 'Tsy mbola niditra ianao.',
     forbidden: 'Tsy manana alalana hanao izany ianao.',
     transactionSave: 'Tsy voatahiry ilay fidirana na fivoahana.',
@@ -372,6 +376,15 @@ const mg: Messages = {
   },
 
   profile: {
+    addAvatar: 'Hampiditra sary',
+    changeAvatar: 'Hanova ny sary',
+    removeAvatar: 'Hanala',
+    avatarHint: 'JPG, PNG na WebP, 5 Mo farafahabetsany. Raha tsy misy sary dia ny litera voalohan’ny anaranao no aseho.',
+    avatarSaved: 'Voavao ny sarin’ny mombamomba',
+    avatarRemoved: 'Voaala ny sarin’ny mombamomba',
+    cropTitle: 'Alamino ny sarinao',
+    cropDescription: 'Sintony hamindra azy ary ampiasao ny bara hanakaiky azy.',
+    zoom: 'Hanakaiky',
     title: 'Ny momba ahy',
     description: 'Ny mpitantana sy ny mpitahiry vola ihany no mahita ny laharan’ny findainao.',
     saved: 'Voatahiry ny momba anao',
