@@ -1,0 +1,98 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Auth / users ──────────────────────────────────────────────
+
+/// Application profile. Credentials live in Supabase Auth; `authId` links
+/// the two. Roles: "admin" | "treasurer" | "viewer".
+model User {
+  id                  String           @id @default(cuid())
+  authId              String?          @unique
+  username            String
+  email               String           @unique
+  /// Optional contact number, stored as E.164 (+1XXXXXXXXXX, Canada/US).
+  phone               String?
+  /// Legacy column, unused since Supabase Auth handles credentials.
+  password            String?
+  role                String
+  /// Church membership: communicant (Mpandray) or not (Tsy Mpandray).
+  memberType          MemberType       @default(MPANDRAY)
+  /// Church responsibilities (informational flags; no effect on access).
+  responsibilities    Responsibility[] @default([MPIARA_MIVAVAKA])
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @default(now()) @updatedAt
+  transactionsCreated Transaction[]    @relation("TransactionCreatedBy")
+  transactionsUpdated Transaction[]    @relation("TransactionUpdatedBy")
+}
+
+enum Responsibility {
+  BIRAO
+  DIAKONA
+  MPIARA_MIVAVAKA
+}
+
+enum MemberType {
+  MPANDRAY
+  TSY_MPANDRAY
+}
+
+// ─── Finance ───────────────────────────────────────────────────
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+enum PaymentMethod {
+  CASH
+  CHEQUE
+  E_TRANSFER
+  CARD
+  DIRECT_DEPOSIT
+  OTHER
+}
+
+model Category {
+  id           String          @id @default(cuid())
+  name         String
+  type         TransactionType
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @default(now()) @updatedAt
+  transactions Transaction[]
+
+  @@unique([name, type])
+}
+
+model Transaction {
+  id            String          @id @default(cuid())
+  type          TransactionType
+  /// Amount in CAD cents (always positive; `type` gives the direction).
+  amountCents   Int
+  date          DateTime        @db.Date
+  description   String
+  paymentMethod PaymentMethod
+  reference     String?
+  /// Object path inside the private `receipts` Supabase Storage bucket.
+  receiptPath   String?
+  categoryId    String?
+  category      Category?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  createdById   String?
+  createdBy     User?           @relation("TransactionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  /// Last user who edited the transaction; null if never edited.
+  updatedById   String?
+  updatedBy     User?           @relation("TransactionUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @default(now()) @updatedAt
+
+  @@index([date])
+  @@index([categoryId])
+}
