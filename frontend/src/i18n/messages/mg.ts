@@ -53,7 +53,7 @@ const mg: Messages = {
     administration: 'Fitantanana',
     users: 'Mpampiasa',
     community: 'Fiarahamonina',
-    members: 'Mpikambana',
+    members: 'Mpiara-mivavaka',
     changePassword: 'Hanova teny miafina',
     myProfile: 'Ny momba ahy',
     logOut: 'Hivoaka',
@@ -321,8 +321,8 @@ const mg: Messages = {
 
   members: {
     searchPlaceholder: 'Hikaroka anarana na mailaka…',
-    searchLabel: 'Hikaroka mpikambana',
-    resultCount: '{shown} amin’ny mpikambana {total}',
+    searchLabel: 'Hikaroka mpiara-mivavaka',
+    resultCount: '{shown} amin’ny mpiara-mivavaka {total}',
     colName: 'Anarana',
     colType: 'Karazany',
     colPhone: 'Finday',
@@ -334,10 +334,10 @@ const mg: Messages = {
     colUpdated: 'Novaina tamin’ny',
     allTypes: 'Karazany rehetra',
     typeFilter: 'Karazana mpikambana',
-    empty: 'Tsy misy mpikambana hita.',
+    empty: 'Tsy misy mpiara-mivavaka hita.',
     newThisMonth: '+{count} tamin’ity volana ity',
     noneThisMonth: 'Tsy misy vaovao tamin’ity volana ity',
-    shareOfMembers: '{percent} amin’ny mpikambana',
+    shareOfMembers: '{percent} amin’ny mpiara-mivavaka',
   },
 
   profile: {
