@@ -31,6 +31,7 @@ import {
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { fmt } from '@/i18n/config';
 import { useI18n } from '@/i18n/client';
+import { isRedirectError } from '@/lib/redirect-error';
 import { translateValidation } from '@/i18n/validation';
 import { cn } from '@/lib/utils';
 import {
@@ -353,22 +354,33 @@ export function TopicView({
         confirmLabel={t.common.delete}
         onConfirm={async () => {
           if (!deleting) return;
-          if (deleting.kind === 'topic') deletingSelf.current = true;
-          const result =
-            deleting.kind === 'topic'
-              ? await deleteTopic(topic.id)
-              : await deleteComment(deleting.id);
-          if (!result.success) deletingSelf.current = false;
+          if (deleting.kind === 'topic') {
+            deletingSelf.current = true;
+            try {
+              // On success the server redirects to the forum (filtered to
+              // this category), so this only returns when it failed.
+              const result = await deleteTopic(topic.id);
+              if (!result.success) {
+                deletingSelf.current = false;
+                toast.error(result.message);
+                return false;
+              }
+            } catch (error) {
+              if (isRedirectError(error)) {
+                toast.success(t.forum.deleted);
+                return;
+              }
+              deletingSelf.current = false;
+              throw error;
+            }
+            return;
+          }
+          const result = await deleteComment(deleting.id);
           if (!result.success) {
             toast.error(result.message);
             return false;
           }
-          if (deleting.kind === 'topic') {
-            toast.success(t.forum.deleted);
-            router.push(`/main/forum?category=${topic.category.id}`);
-          } else {
-            toast.success(t.forum.commentDeleted);
-          }
+          toast.success(t.forum.commentDeleted);
         }}
       />
     </div>

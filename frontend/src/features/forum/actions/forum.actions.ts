@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import prisma from '@/lib/prisma';
 import {
   AuthError,
@@ -105,7 +106,21 @@ async function markRead(userId: string, topicId: string) {
 
 // ─── Topics ───────────────────────────────────────────────────
 
+/**
+ * Creates a topic, then redirects to the forum. The redirect happens here on
+ * the server (not with router.push in the browser): the forum page comes back
+ * in the same response, so the navigation can't be dropped by the router
+ * refreshing for this action or by other forum activity arriving meanwhile.
+ * On failure it returns the error message instead.
+ */
 export async function createTopic(values: TopicFormValues): Promise<WithResult<{ id: string }>> {
+  const result = await saveNewTopic(values);
+  // Outside any try/catch: redirect() works by throwing.
+  if (result.success) redirect('/main/forum');
+  return result;
+}
+
+async function saveNewTopic(values: TopicFormValues): Promise<WithResult<{ id: string }>> {
   return runWithResult<{ id: string }>(async () => {
     const user = await authorize();
     const { t } = await getI18n();
@@ -159,12 +174,31 @@ export async function updateTopic(id: string, values: TopicFormValues): Promise<
   }, 'forumSave');
 }
 
+/**
+ * Deletes a topic, then redirects to the forum filtered to its category (on
+ * the server, for the same reason as createTopic). Returns only on failure.
+ */
 export async function deleteTopic(id: string): Promise<ActionResult> {
+  const deleted = { categoryId: '' };
+  const result = await removeTopic(id, deleted);
+  // Outside any try/catch: redirect() works by throwing.
+  if (result.success) {
+    redirect(
+      deleted.categoryId
+        ? `/main/forum?category=${encodeURIComponent(deleted.categoryId)}`
+        : '/main/forum',
+    );
+  }
+  return result;
+}
+
+async function removeTopic(id: string, deleted: { categoryId: string }): Promise<ActionResult> {
   return runAction(async () => {
     const user = await authorize();
     try {
       const topic = await visibleTopic(user, id);
       if (!canEditPost(user, topic.authorId)) throw new AuthError('forbidden');
+      deleted.categoryId = topic.categoryId;
     } catch (error) {
       return fail(error, 'forumDelete');
     }
