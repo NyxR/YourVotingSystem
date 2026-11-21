@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useI18n } from '@/i18n/client';
+import { isRedirectError } from '@/lib/redirect-error';
 import { createTopic } from '../actions/forum.actions';
 import type { ForumCategoryItem } from '../schemas';
 import { TopicForm } from './topic-form';
@@ -32,10 +33,20 @@ export function NewTopic({
             submitLabel={t.forum.createTopic}
             onCancel={() => router.back()}
             onSubmit={async (values) => {
-              const result = await createTopic(values);
-              if (!result.success) return result.message;
-              toast.success(t.forum.created);
-              router.push(`/main/forum/${result.id}`);
+              try {
+                // On success the server redirects to the forum, so this only
+                // returns when something went wrong.
+                const result = await createTopic(values);
+                if (!result.success) return result.message;
+              } catch (error) {
+                // The redirect arrives as a rejected promise; Next.js has
+                // already navigated by then.
+                if (isRedirectError(error)) {
+                  toast.success(t.forum.created);
+                  return;
+                }
+                throw error;
+              }
             }}
           />
         </div>
